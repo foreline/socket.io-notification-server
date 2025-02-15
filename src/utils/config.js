@@ -4,8 +4,10 @@
 
 require('dotenv').config({
     //path: './../../config/.env'
-    path: '/config/.env'
+    path: '../../config/.env'
 });
+
+console.log(process.env);
 
 const config = {
     server: {
