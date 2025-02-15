@@ -6,10 +6,11 @@ const fs = require('node:fs');
 
 const express = require('express');
 const app = express();
+const config = require('./utils/config.js');
 
 const options = {
-    cert: fs.readFileSync(process.env.SSL_CERTIFICATE),
-    key: fs.readFileSync(process.env.SSL_CERTIFICATE_KEY),
+    cert: fs.readFileSync(config.server.sslCertificate),
+    key: fs.readFileSync(config.server.ssLCertificateKey),
 };
 
 const https = require('https').createServer(options, app);
@@ -20,8 +21,8 @@ const io = require('socket.io')(https, {
         methods: ["GET", "POST"]
     },
     adapter: require('socket.io-redis')({
-        host: process.env.REDIS_HOST || 'localhost',
-        port: process.env.REDIS_PORT || 6379
+        host: config.redis.host || 'localhost',
+        port: config.redis.port || 6379
     })
 });
 

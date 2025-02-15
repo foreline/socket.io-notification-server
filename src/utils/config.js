@@ -10,7 +10,9 @@ require('dotenv').config({
 const config = {
     server: {
         port: parseInt(process.env.PORT),
-        nodeEnv: process.env.NODE_ENV
+        nodeEnv: process.env.NODE_ENV,
+        sslCertificate: process.env.SSL_CERTIFICATE,
+        ssLCertificateKey: process.env.SSL_CERTIFICATE_KEY,
     },
     redis: {
         host: process.env.REDIS_HOST,
