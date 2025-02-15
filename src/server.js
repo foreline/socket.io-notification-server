@@ -2,11 +2,19 @@
  *
  */
 
+import fs from 'node:fs';
+
 const express = require('express');
 const app = express();
-const http = require('http').createServer(app);
 
-const io = require('socket.io')(http, {
+const options = {
+    cert: fs.readFileSync(process.env.SSL_CERTIFICATE),
+    key: fs.readFileSync(process.env.SSL_CERTIFICATE_KEY),
+};
+
+const https = require('https').createServer(options, app);
+
+const io = require('socket.io')(https, {
     cors: {
         origin: "*",
         methods: ["GET", "POST"]
@@ -54,6 +62,6 @@ app.get('/health', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-http.listen(PORT, () => {
+https.listen(PORT, () => {
     console.log(`Socket.IO server running on port ${PORT}`);
 });

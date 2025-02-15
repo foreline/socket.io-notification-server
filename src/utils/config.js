@@ -1,0 +1,27 @@
+/*
+ *
+ */
+
+require('dotenv').config({
+    //path: `config/env/${process.env.NODE_ENV}.env`
+    path: `config/env/.env`
+});
+
+const config = {
+    server: {
+        port: parseInt(process.env.PORT),
+        nodeEnv: process.env.NODE_ENV
+    },
+    redis: {
+        host: process.env.REDIS_HOST,
+        port: parseInt(process.env.REDIS_PORT)
+    },
+    socketIo: {
+        corsOrigin: process.env.SOCKET_IO_CORS_ORIGIN,
+        corsMethods: ['GET', 'POST'],
+        pingTimeout: 60000,
+        pingInterval: 25000
+    }
+};
+
+module.exports = config;
