@@ -13,10 +13,37 @@ const redisClient = createClient({
     }
 });
 
+// Create a separate Redis subscriber
+const redisSubscriber = redisClient.duplicate();
+
 // Handle Redis connection errors
 redisClient.on('error', (err) => {
     console.error('Redis connection error:', err);
     process.exit(1);
+});
+
+// Subscribe to messages channel
+redisSubscriber.subscribe('events', (err, count) => {
+    if ( err ) {
+        console.error('Error subscribing to Redis channel: ', err);
+        return;
+    }
+    console.log(`Subscribed to ${count} channels`);
+});
+
+// Handle incoming Redis messages
+redisSubscriber.on('message', (channel, message) => {
+    if ('events' === channel) {
+        try {
+            const parsedMessage = JSON.parse(message);
+            io.emit('broadcast', {
+                sender: 'server',
+                message: parsedMessage
+            });
+        } catch (error) {
+            console.error('Error parsing Redis message:', error);
+        }
+    }
 });
 
 // Create Redis adapter for Socket.IO

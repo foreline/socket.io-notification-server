@@ -2,3 +2,4 @@
 /node_modules
 /.proj2file
 /config/.env
+/logs

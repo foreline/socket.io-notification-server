@@ -9,8 +9,6 @@ require('dotenv').config({
     path: path.resolve(__dirname, '../../config/.env')
 });
 
-console.log(process.env);
-
 const config = {
     server: {
         port: parseInt(process.env.PORT),
