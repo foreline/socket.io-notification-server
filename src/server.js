@@ -8,6 +8,8 @@ const express = require('express');
 const app = express();
 const config = require('./utils/config.js');
 
+console.log({config});
+
 const options = {
     cert: fs.readFileSync(config.server.sslCertificate),
     key: fs.readFileSync(config.server.ssLCertificateKey),
