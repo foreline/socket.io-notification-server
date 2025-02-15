@@ -4,7 +4,7 @@
 
 require('dotenv').config({
     //path: `config/env/${process.env.NODE_ENV}.env`
-    path: `config/env/.env`
+    path: './../../config/.env'
 });
 
 const config = {
