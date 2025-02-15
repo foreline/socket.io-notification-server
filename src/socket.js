@@ -33,6 +33,7 @@ redisSubscriber.subscribe('socket.io-response#/*', (err, count) => {
 
 // Handle incoming Redis messages
 redisSubscriber.on('message', (channel, message) => {
+    console.log({channel});
     if ('socket.io-response#/*' === channel) {
         try {
             const parsedMessage = JSON.parse(message);
