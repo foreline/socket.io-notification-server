@@ -23,7 +23,7 @@ redisClient.on('error', (err) => {
 });
 
 // Subscribe to messages channel
-redisSubscriber.subscribe('events', (err, count) => {
+redisSubscriber.subscribe('socket.io-response#/*', (err, count) => {
     if ( err ) {
         console.error('Error subscribing to Redis channel: ', err);
         return;
@@ -41,7 +41,7 @@ redisSubscriber.on('message', (channel, message) => {
                 message: parsedMessage
             });
         } catch (error) {
-            console.error('Error parsing Redis message:', error);
+            console.error('Error parsing Redis message: ', error);
         }
     }
 });
