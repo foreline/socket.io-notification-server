@@ -2,9 +2,11 @@
  *
  */
 
+const path = require('path');
+
 require('dotenv').config({
     //path: './../../config/.env'
-    path: '../../config/.env'
+    path: path.resolve(__dirname, '../../config/.env')
 });
 
 console.log(process.env);
