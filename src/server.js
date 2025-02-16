@@ -19,7 +19,7 @@ const https = require('https').createServer(options, app);
 
 const setupSocketIO = require('./socket.js'); // Import socket.js
 
-const io = Server(https, {
+const io = new Server(https, {
     cors: {
         origin: "*",
         methods: ["GET", "POST"]
