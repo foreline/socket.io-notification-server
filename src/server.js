@@ -17,7 +17,8 @@ const options = {
 
 const https = require('https').createServer(options, app);
 
-const setupSocketIO = require('./socket.js'); // Import socket.js
+// Import socket.js
+const setupSocketIO = require('./socket.js');
 
 const io = new Server(https, {
     cors: {

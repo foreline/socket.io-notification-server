@@ -2,10 +2,7 @@
  *
  */
 
-//const { createClient } = require('redis');
 const Redis = require("ioredis");
-
-//const { createAdapter } = require('socket.io-redis');
 
 const { createAdapter } = require("@socket.io/redis-adapter");
 
@@ -27,22 +24,22 @@ subClient.on('error', (err) => {
     process.exit(1);
 });
 
-subClient.on('message', (channel, message) => {
+/*subClient.on('message', (channel, message) => {
     console.log('[REDIS] Received message on channel:', channel);
     console.log('[REDIS] Raw message:', message);
-});
+});*/
 
 // Subscribe to messages channel
-subClient.subscribe('socket.io-response#/#', (err, count) => {
+/*subClient.subscribe('socket.io-response#/#', (err, count) => {
     if ( err ) {
         console.error('[REDIS] Error subscribing to Redis channel: ', err);
         return;
     }
     console.log(`[REDIS] Subscribed to ${count} channels`);
-});
+});*/
 
 // Handle incoming Redis messages
-subClient.on('message', (channel, message) => {
+/*subClient.on('message', (channel, message) => {
     console.log('[REDIS] Received message on channel:', channel);
     console.log('[REDIS] Raw message:', message);
     
@@ -57,7 +54,7 @@ subClient.on('message', (channel, message) => {
             console.error('[REDIS] Error parsing Redis message: ', error);
         }
     }
-});
+});*/
 
 // Create Redis adapter for Socket.IO
 const redisAdapter = createAdapter(pubClient, subClient, {});
@@ -93,6 +90,36 @@ module.exports = (io) => {
             console.error(`[SOCKET.IO] Socket error for ${socket.id}:`, err);
         });
     });
+    
+    // Configure Redis message handling with proper scope
+    const handleRedisMessage = (channel, message) => {
+        console.log('[REDIS] Received message on channel:', channel);
+        console.log('[REDIS] Raw message:', message);
+        
+        if ('socket.io-response#/#' === channel) {
+            try {
+                const parsedMessage = JSON.parse(message);
+                io.emit('broadcast', {
+                    sender: 'server',
+                    message: parsedMessage
+                });
+            } catch (error) {
+                console.error('[REDIS] Error parsing Redis message: ', error);
+            }
+        }
+    };
+    
+    // Subscribe to messages channel
+    subClient.subscribe('socket.io-response#/#', (err, count) => {
+        if (err) {
+            console.error('[REDIS] Error subscribing to Redis channel: ', err);
+            return;
+        }
+        console.log(`[REDIS] Subscribed to ${count} channels`);
+    });
+    
+    // Set up event listener with bound context
+    subClient.on('message', handleRedisMessage.bind(null));
     
     // Configure Socket.IO options
     return {
