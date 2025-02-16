@@ -35,6 +35,7 @@ io.on('connection', (socket) => {
     
     // Handle connection
     console.log(`Client ${clientId} connected`);
+    
     clients.set(clientId, socket.id);
     
     // Broadcast client count
