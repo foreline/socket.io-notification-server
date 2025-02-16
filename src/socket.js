@@ -96,9 +96,13 @@ module.exports = (io) => {
         console.log('[REDIS] Received message on channel:', channel);
         console.log('[REDIS] Raw message:', message);
         
-        if ('socket.io-response#/#' === channel) {
+        if ( 'socket.io-response#/#' === channel ) {
             try {
                 const parsedMessage = JSON.parse(message);
+                
+                console.log('[SOCKET.IO] Emitting broadcast message');
+                console.log({parsedMessage});
+                
                 io.emit('broadcast', {
                     sender: 'server',
                     message: parsedMessage
@@ -106,6 +110,16 @@ module.exports = (io) => {
             } catch (error) {
                 console.error('[REDIS] Error parsing Redis message: ', error);
             }
+        } else {
+            console.warn('[SOCKET.IO] Channel not matched');
+            const parsedMessage = JSON.parse(message);
+            console.log('[SOCKET.IO] Emitting broadcast message');
+            console.log({parsedMessage});
+    
+            io.emit('broadcast', {
+                sender: 'server',
+                message: parsedMessage
+            });
         }
     };
     
