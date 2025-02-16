@@ -23,17 +23,11 @@ const io = new Server(https, {
     cors: {
         origin: "*",
         methods: ["GET", "POST"]
-    },
-    // @fixme need to attach redis adapter
-    /*adapter: require('socket.io-redis')({
-        host: config.redis.host || 'localhost',
-        port: config.redis.port || 6379
-    })*/
+    }
 });
 
 // Initialize Socket.IO with Redis adapter
 setupSocketIO(io);
-
 
 // Store connected clients
 const clients = new Map();

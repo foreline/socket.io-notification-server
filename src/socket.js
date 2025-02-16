@@ -17,44 +17,36 @@ const { createAdapter } = require("@socket.io/redis-adapter");
     }
 });*/
 
+// Create redis publisher and subscriber
 const pubClient = new Redis();
 const subClient = pubClient.duplicate();
 
-// Create a separate Redis subscriber
-//const redisSubscriber = redisClient.duplicate();
-
 // Handle Redis connection errors
-/*redisClient.on('error', (err) => {
+subClient.on('error', (err) => {
     console.error('[REDIS] connection error:', err);
     process.exit(1);
-});*/
+});
 
 subClient.on('message', (channel, message) => {
     console.log('[REDIS] Received message on channel:', channel);
     console.log('[REDIS] Raw message:', message);
 });
 
-// debug
-/*redisClient.on('*', (e) => {
-    console.log({e});
-});*/
-
 // Subscribe to messages channel
-/*redisSubscriber.subscribe('socket.io-response#/#', (err, count) => {
-//redisSubscriber.subscribe('*', (err, count) => {
+subClient.subscribe('socket.io-response#/#', (err, count) => {
     if ( err ) {
         console.error('[REDIS] Error subscribing to Redis channel: ', err);
         return;
     }
     console.log(`[REDIS] Subscribed to ${count} channels`);
-});*/
+});
 
 // Handle incoming Redis messages
-/*redisSubscriber.on('message', (channel, message) => {
+subClient.on('message', (channel, message) => {
     console.log('[REDIS] Received message on channel:', channel);
     console.log('[REDIS] Raw message:', message);
     
-    if ('socket.io-response#/!*' === channel) {
+    if ('socket.io-response#/#' === channel) {
         try {
             const parsedMessage = JSON.parse(message);
             io.emit('broadcast', {
@@ -65,24 +57,15 @@ subClient.on('message', (channel, message) => {
             console.error('[REDIS] Error parsing Redis message: ', error);
         }
     }
-});*/
-
-// debug
-/*redisSubscriber.on('*', (channel, message) => {
-    console.log({channel});
-    console.log({message});
-});*/
+});
 
 // Create Redis adapter for Socket.IO
-//const redisAdapter = createAdapter(redisClient);
 const redisAdapter = createAdapter(pubClient, subClient, {});
 
 
 // Export the Socket.IO configuration
 module.exports = (io) => {
     
-    //io.adapter(pubClient);
-    //io.adapter(subClient);
     // Configure Socket.IO options
     io.adapter(redisAdapter);
     
