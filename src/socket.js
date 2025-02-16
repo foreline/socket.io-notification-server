@@ -75,14 +75,16 @@ subClient.on('message', (channel, message) => {
 
 // Create Redis adapter for Socket.IO
 //const redisAdapter = createAdapter(redisClient);
+const redisAdapter = createAdapter(pubClient, subClient, {});
+
 
 // Export the Socket.IO configuration
 module.exports = (io) => {
     
-    io.adapter(pubClient);
-    io.adapter(subClient);
+    //io.adapter(pubClient);
+    //io.adapter(subClient);
     // Configure Socket.IO options
-    //io.adapter(redisAdapter);
+    io.adapter(redisAdapter);
     
     // Configure Socket.IO options for production
     io.on('connection', (socket) => {

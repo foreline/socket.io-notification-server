@@ -8,6 +8,8 @@ const express = require('express');
 const app = express();
 const config = require('./utils/config.js');
 
+const { Server } = require("socket.io");
+
 const options = {
     cert: fs.readFileSync(config.server.sslCertificate),
     key: fs.readFileSync(config.server.ssLCertificateKey),
@@ -15,16 +17,22 @@ const options = {
 
 const https = require('https').createServer(options, app);
 
-const io = require('socket.io')(https, {
+const setupSocketIO = require('./socket.js'); // Import socket.js
+
+const io = Server(https, {
     cors: {
         origin: "*",
         methods: ["GET", "POST"]
     },
-    adapter: require('socket.io-redis')({
+    // @fixme need to attach redis adapter
+    /*adapter: require('socket.io-redis')({
         host: config.redis.host || 'localhost',
         port: config.redis.port || 6379
-    })
-})
+    })*/
+});
+
+// Initialize Socket.IO with Redis adapter
+setupSocketIO(io);
 
 
 // Store connected clients
