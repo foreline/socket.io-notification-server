@@ -23,7 +23,8 @@ redisClient.on('error', (err) => {
 });
 
 // Subscribe to messages channel
-redisSubscriber.subscribe('socket.io-response#/*', (err, count) => {
+//redisSubscriber.subscribe('socket.io-response#/*', (err, count) => {
+redisSubscriber.subscribe('*', (err, count) => {
     if ( err ) {
         console.error('Error subscribing to Redis channel: ', err);
         return;
