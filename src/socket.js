@@ -94,11 +94,17 @@ module.exports = (io) => {
     // Configure Redis message handling with proper scope
     const handleRedisMessage = (channel, message) => {
         console.log('[REDIS] Received message on channel:', channel);
-        console.log('[REDIS] Raw message:', message);
+        //console.log('[REDIS] Raw message:', message);
         
         if ( 'socket.io-response#/#' === channel ) {
             try {
-                const parsedMessage = JSON.parse(message);
+                let parsedMessage;
+                
+                if ( 'object' === typeof message ) {
+                    parsedMessage = JSON.parse(message);
+                } else {
+                    parsedMessage = message;
+                }
                 
                 console.log('[SOCKET.IO] Emitting broadcast message');
                 console.log({parsedMessage});
@@ -112,14 +118,6 @@ module.exports = (io) => {
             }
         } else {
             console.warn('[SOCKET.IO] Channel not matched');
-            const parsedMessage = JSON.parse(message);
-            console.log('[SOCKET.IO] Emitting broadcast message');
-            console.log({parsedMessage});
-    
-            io.emit('broadcast', {
-                sender: 'server',
-                message: parsedMessage
-            });
         }
     };
     
