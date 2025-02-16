@@ -24,7 +24,8 @@ const io = require('socket.io')(https, {
         host: config.redis.host || 'localhost',
         port: config.redis.port || 6379
     })
-});
+})
+
 
 // Store connected clients
 const clients = new Map();
