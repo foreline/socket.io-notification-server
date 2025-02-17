@@ -7,6 +7,10 @@ const fs = require('node:fs');
 const express = require('express');
 const app = express();
 const config = require('./utils/config.js');
+const LoggerMiddleware = require('./middleware/logger.js');
+
+// Initialize logger middleware
+const logger = new LoggerMiddleware();
 
 const { Server } = require("socket.io");
 
@@ -28,7 +32,12 @@ const io = new Server(https, {
 });
 
 // Initialize Socket.IO with Redis adapter
-setupSocketIO(io);
+setupSocketIO(io, logger);
+
+// Use the logger middleware
+io.use((socket, next) => {
+    logger.handle(socket, next);
+});
 
 // Store connected clients
 const clients = new Map();
@@ -64,6 +73,20 @@ io.on('connection', (socket) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
+    
+    const healthData = {
+        status: 'healthy',
+        connectedClients: io.engine.clientsCount
+    };
+    
+    const logEntry = logger.generateLogEntry(
+        'health_check',
+        null,
+        'Health check performed',
+        healthData
+    );
+    console.log(JSON.stringify(logEntry));
+    
     res.json({ status: 'healthy', connectedClients: clients.size });
 });
 
