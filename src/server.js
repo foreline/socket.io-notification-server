@@ -8,9 +8,11 @@ const express = require('express');
 const app = express();
 const config = require('./utils/config.js');
 const LoggerMiddleware = require('./middleware/logger.js');
+const AuthMiddleware = require('./middleware/auth.js');
 
 // Initialize logger middleware
 const logger = new LoggerMiddleware();
+const authMiddleware = new AuthMiddleware(process.env.JWT_SECRET);
 
 const { Server } = require("socket.io");
 
@@ -37,6 +39,11 @@ setupSocketIO(io, logger);
 // Use the logger middleware
 io.use((socket, next) => {
     logger.handle(socket, next);
+});
+
+// Use the authentication middleware
+io.use((socket, next) => {
+    authMiddleware.handle(socket, next);
 });
 
 // Store connected clients

@@ -1,3 +1,7 @@
+/*
+ * logger middleware
+ */
+
 const { v4: uuidv4 } = require('uuid');
 
 class LoggerMiddleware {
