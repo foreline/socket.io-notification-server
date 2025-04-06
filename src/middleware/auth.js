@@ -28,8 +28,7 @@ class AuthMiddleware {
         }
         
         try {
-            const decoded = this.validateToken(authHeader);
-            socket.decodedToken = decoded;
+            socket.decodedToken = this.validateToken(authHeader);
             next();
         } catch (error) {
             next(error);
