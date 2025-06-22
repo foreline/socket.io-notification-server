@@ -1,5 +1,9 @@
 # Socket.io notifications backend
 
+Node.js application that provides a Socket.IO server for real-time notifications and event broadcasting.
+This application uses Redis as a message broker to handle multiple instances of the Socket.IO server, allowing for horizontal scaling and real-time communication across different server instances.
+
+
 ## Requirements
 
 * nodejs

@@ -4,12 +4,20 @@
 
 const jwt = require('jsonwebtoken');
 
-class AuthMiddleware {
-    constructor(secretKey) {
+class AuthMiddleware
+{
+    constructor(secretKey)
+    {
         this.secretKey = secretKey;
     }
     
-    validateToken(token) {
+    /**
+     *
+     * @param token
+     * @returns {boolean}
+     */
+    validateToken(token)
+    {
         try {
             // @fixme
             return token === this.secretKey;
@@ -19,11 +27,18 @@ class AuthMiddleware {
         }
     }
     
-    handle(socket, next) {
-        const authHeader = socket.handshake.auth?.token ||
-            socket.handshake.query?.token;
+    /**
+     *
+     * @param socket
+     * @param next
+     * @returns {*}
+     */
+    handle(socket, next)
+    {
+        const authHeader = socket.handshake.auth?.token
+            || socket.handshake.query?.token;
         
-        if (!authHeader) {
+        if ( !authHeader ) {
             return next(new Error('Authentication required'));
         }
         
