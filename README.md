@@ -207,6 +207,27 @@ npm run pm2:stop     # Stop
 
 ## 🧪 Testing
 
+### CORS Configuration Testing
+
+Test CORS configuration including preflight OPTIONS requests:
+
+```bash
+# Start the server first
+npm start
+
+# In another terminal, test CORS
+npm test
+# or
+npm run test:cors
+```
+
+The CORS test will verify:
+- ✅ Preflight OPTIONS requests are handled correctly
+- ✅ Access-Control headers are properly set
+- ✅ Cross-origin requests work as expected
+
+### JWT Token Testing
+
 Generate test tokens for development:
 
 ```javascript
@@ -216,6 +237,8 @@ const jwtHelper = new JwtHelper('your-secret');
 const testToken = jwtHelper.createTestToken(123, 'test_connection_123');
 console.log('Test token:', testToken);
 ```
+
+### Redis Notification Testing
 
 Test notifications via Redis:
 
@@ -254,8 +277,32 @@ Handles connection-specific JWT validation:
 
 **Authentication fails**: Check JWT secret matches, verify token structure
 **Redis errors**: Verify Redis server running, check host/port config  
-**CORS errors**: Update CORS_ORIGIN environment variable
+**CORS errors**: 
+  - Update CORS_ORIGIN environment variable with your frontend domain
+  - For production, use specific domains instead of `*`
+  - OPTIONS method is automatically included for preflight requests
+  - Ensure credentials are properly configured if using authentication
 **SSL issues**: Verify certificate paths and validity
+
+### Common CORS Issues in Production
+
+1. **Preflight failures**: Make sure your CORS_ORIGIN includes the exact frontend domain
+   ```bash
+   # Example for production
+   CORS_ORIGIN=https://your-frontend-domain.com
+   
+   # Multiple domains
+   CORS_ORIGIN=https://app.domain.com,https://admin.domain.com
+   ```
+
+2. **Credentials errors**: When using authentication, ensure both frontend and backend are configured for credentials:
+   ```javascript
+   // Frontend
+   const socket = io('https://your-api.com', {
+     withCredentials: true,
+     auth: { token: 'your-jwt-token' }
+   });
+   ```
 
 Enable debug mode: `DEBUG_MODE=true npm start`
 

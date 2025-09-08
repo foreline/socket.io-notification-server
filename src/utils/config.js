@@ -99,7 +99,7 @@ const config = {
             process.env.SOCKET_IO_CORS_ORIGIN || // Legacy support
             '*'
         ),
-        methods: ['GET', 'POST'],
+        methods: ['GET', 'POST', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true
     },

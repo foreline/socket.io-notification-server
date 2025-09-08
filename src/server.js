@@ -81,6 +81,9 @@ setupSocketIO(io, logger, connectionManager);
 app.use(cors(serverConfig.cors));
 app.use(express.json());
 
+// Handle preflight OPTIONS requests explicitly
+app.options('*', cors(serverConfig.cors));
+
 /**
  * Socket.IO Connection Handler with Connection-Specific Authentication
  */
