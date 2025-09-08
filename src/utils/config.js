@@ -9,7 +9,7 @@ const path = require('path');
 
 // Load environment variables from .env file
 require('dotenv').config({
-    path: path.resolve(__dirname, '../../.env')
+    path: path.resolve(__dirname, '../../config/.env')
 });
 
 /**
@@ -94,15 +94,23 @@ const config = {
     },
     
     cors: {
-        origin: parseCorsOrigins(process.env.CORS_ORIGIN || '*'),
+        origin: parseCorsOrigins(
+            process.env.CORS_ORIGIN || 
+            process.env.SOCKET_IO_CORS_ORIGIN || // Legacy support
+            '*'
+        ),
         methods: ['GET', 'POST'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true
     },
     
     ssl: {
-        certPath: process.env.SSL_CERT_PATH || './config/ssl/certificate.crt',
-        keyPath: process.env.SSL_KEY_PATH || './config/ssl/private.key'
+        certPath: process.env.SSL_CERT_PATH || 
+                 process.env.SSL_CERTIFICATE || // Legacy support
+                 './config/ssl/certificate.crt',
+        keyPath: process.env.SSL_KEY_PATH || 
+                process.env.SSL_CERTIFICATE_KEY || // Legacy support
+                './config/ssl/private.key'
     },
     
     socketIo: {

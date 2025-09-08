@@ -30,7 +30,7 @@ A secure, scalable Socket.IO server implementation for real-time notifications u
 npm install
 
 # Copy environment configuration
-cp .env.example .env
+cp config/.env.example config/.env
 
 # Edit .env file with your settings
 # Set at minimum: JWT_SECRET, REDIS_HOST, REDIS_PORT
@@ -39,7 +39,7 @@ cp .env.example .env
 ### 2. Environment Configuration
 
 ```bash
-# Required settings in .env
+# Required settings in config/.env
 JWT_SECRET=your-super-secure-random-secret-key
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
