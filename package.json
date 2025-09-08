@@ -1,6 +1,20 @@
 {
+  "name": "servicedesk-socketio-server",
+  "version": "1.0.0",
+  "description": "Socket.IO server for ServiceDesk real-time notifications with connection-specific JWT authentication",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop ecosystem.config.js",
+    "pm2:restart": "pm2 restart ecosystem.config.js",
+    "pm2:logs": "pm2 logs"
+  },
   "dependencies": {
     "@socket.io/redis-adapter": "^8.3.0",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "ioredis": "^5.5.0",
@@ -8,5 +22,23 @@
     "pm2": "^5.4.3",
     "socket.io": "^4.8.1",
     "uuid": "^11.0.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "socket.io",
+    "real-time",
+    "notifications",
+    "jwt",
+    "redis",
+    "servicedesk",
+    "connection-specific",
+    "authentication"
+  ],
+  "author": "ServiceDesk Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
   }
 }

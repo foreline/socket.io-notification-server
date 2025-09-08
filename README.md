@@ -1,146 +1,266 @@
-# Socket.io notifications backend
+# ServiceDesk Socket.IO Server - Connection-Specific Authentication
 
-Node.js application that provides a Socket.IO server for real-time notifications and event broadcasting.
-This application uses Redis as a message broker to handle multiple instances of the Socket.IO server, allowing for horizontal scaling and real-time communication across different server instances.
+A secure, scalable Socket.IO server implementation for real-time notifications using connection-specific JWT tokens. Each browser tab gets a unique token that cannot be reused by other connections, providing maximum security for multi-device scenarios.
+
+## 🔥 Features
+
+- ✅ **Connection-specific JWT tokens** - Each browser tab gets unique token
+- ✅ **Secure authentication** - Cryptographically signed, tamper-proof tokens
+- ✅ **Server-controlled room assignment** - Users cannot choose rooms
+- ✅ **Token expiration handling** - Automatic cleanup of old connections
+- ✅ **Redis pub/sub notifications** - Scalable notification delivery
+- ✅ **Connection management** - Track and manage user connections
+- ✅ **Health monitoring** - Comprehensive health checks and statistics
+- ✅ **Framework agnostic** - Works with any backend framework
+- ✅ **Production ready** - Full error handling and logging
 
 
 ## Requirements
 
-* nodejs
-* redis
-* npm
-  * express
-  * pm2
-  * socket.io
-  * socket.io-redis 
+- Node.js 16.0.0 or higher
+- Redis server
+- NPM dependencies (automatically installed)
+
+## 🚀 Quick Start
+
+### 1. Installation
 
 ```bash
-apt install redis
-# or
-yum install redis
-```
-
-## Usage
-
-Install packages:
-```bash
+# Install dependencies
 npm install
+
+# Copy environment configuration
+cp .env.example .env
+
+# Edit .env file with your settings
+# Set at minimum: JWT_SECRET, REDIS_HOST, REDIS_PORT
 ```
 
-Start application:
+### 2. Environment Configuration
+
 ```bash
-pm2 start ecosystem.config.js
+# Required settings in .env
+JWT_SECRET=your-super-secure-random-secret-key
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+
+# Optional settings
+PORT=3000
+NODE_ENV=development
+CORS_ORIGIN=*
 ```
 
-Stop application:
+### 3. Start the Server
+
 ```bash
-pm2 stop ecosystem.config.js
+# Development mode with auto-reload
+npm run dev
+
+# Production mode
+npm start
+
+# Using PM2 for production
+npm run pm2:start
 ```
 
-Client example:
-```javascript
-const client = new SocketClient('http://localhost:3000', window.eventEmitter, token);
+## 📡 Redis Notification Channels
 
-/**
- *
- */
-class SocketClient {
-    
-    constructor(url = 'http://localhost:3000', eventEmitter, token) {
-        this.socket = null;
-        this.url = url;
-        this.token = token;
-        this.initialize(eventEmitter);
-    }
-    
-    initialize(eventEmitter)
-    {
-        // Initialize Socket.IO connection with all transports
-        this.socket = io(this.url, {
-            autoConnect: true,
-            reconnection: true,
-            reconnectionDelay: 1000,
-            reconnectionDelayMax: 5000,
-            reconnectionAttempts: 5,
-            auth: {
-                token: this.token
-            }
-        });
-        
-        // Bind event handlers
-        this.bindEventHandlers(eventEmitter);
-    }
-    
-    bindEventHandlers(eventEmitter)
-    {
-        // Connection events
-        this.socket.on('connect', () => {
-            console.log('Connected to server');
-        });
-        
-        // Connection errors events
-        this.socket.on('connect_error', (error) => {
-            console.error('Connection error:', error);
-        });
-        
-        // Disconnection events
-        this.socket.on('disconnect', (reason) => {
-            console.log('Disconnected:', reason);
-        });
-        
-        // Custom events from server
-        this.socket.on('clientCount', (count) => {
-            console.log(`Active clients: ${count}`);
-        });
-        
-        // Message events
-        this.socket.on('message', (data) => {
-            console.log(`Received message from ${data.sender}: ${data.message}`);
-        })
-    
-        // Broadcast events
-        this.socket.on('broadcast', (data) => {
-            console.log(`Received broadcast message`);
-            
-            const message = JSON.parse(data.message);
-            
-            const event = message.event;
-            const entity = message.entity;
-            
-            eventEmitter.emit(event, entity);
-        });
-    
-        // Handle acknowledgments
-        this.socket.on('acknowledge', (messageId) => {
-            console.log(`Message acknowledged: ${messageId}`);
-        });
-    }
-    
-    sendMessage(message)
-    {
-        if ( !this.socket.connected ) {
-            console.error('Cannot send message - not connected');
-            return;
-        }
-        
-        const messageId = Date.now().toString();
-        this.socket.emit('message', {
-            id: messageId,
-            content: message
-        }, (ack) => {
-            if (ack?.error) {
-                console.error('Message delivery failed:', ack.error);
-            }
-        });
-    }
-    
-    disconnect()
-    {
-        if ( !this.socket ) {
-            return;
-        }
-        
-        this.socket.disconnect();
-    }
+The server listens to these Redis channels for notifications:
+
+### User Notifications
+Send to all connections of a specific user:
+```redis
+PUBLISH user_notifications '{
+  "type": "user_notification",
+  "target_user_id": 123,
+  "notification": {
+    "title": "New Ticket",
+    "message": "You have a new support ticket",
+    "type": "ticket_created"
+  }
+}'
+```
+
+### Connection-Specific Notifications
+Send to a specific browser tab:
+```redis
+PUBLISH connection_notifications '{
+  "type": "connection_notification", 
+  "target_connection_id": "abc123_connection_id",
+  "notification": {
+    "title": "Session Update",
+    "message": "Your session has been updated"
+  }
+}'
+```
+
+### Broadcast Notifications
+Send to all connected users:
+```redis
+PUBLISH broadcast_notifications '{
+  "type": "broadcast",
+  "notification": {
+    "title": "System Maintenance",
+    "message": "System will be down for maintenance in 10 minutes"
+  }
+}'
+```
+
+## 🔐 JWT Token Structure
+
+Connection-specific tokens must include these claims:
+
+```json
+{
+  "iss": "servicedesk.local",
+  "aud": "socket.io",
+  "iat": 1234567890,
+  "exp": 1234567890,
+  "nbf": 1234567890,
+  "jti": "unique_connection_id",
+  "user_id": 123,
+  "connection_id": "unique_connection_id",
+  "session_id": "php_session_id",
+  "user_agent_hash": "hash_of_user_agent",
+  "ip_hash": "hash_of_client_ip",
+  "username": "john.doe",
+  "full_name": "John Doe",
+  "is_admin": false,
+  "permissions": {
+    "can_view_tickets": true,
+    "can_create_tickets": true
+  }
 }
 ```
+
+## 🌐 HTTP Endpoints
+
+- `GET /health` - Server health status and connection statistics
+- `GET /stats` - Detailed connection statistics and user breakdown  
+- `GET /users` - List of currently active users and connection counts
+- `POST /admin/cleanup` - Manual cleanup of stale connections (dev only)
+
+## 🔧 Client-Side Usage
+
+```javascript
+// Connect with JWT token
+const socket = io('http://localhost:3000', {
+  auth: { token: 'your-jwt-token-from-backend' }
+});
+
+// Handle authentication
+socket.on('authenticated', (data) => {
+  console.log('Authenticated:', data);
+  console.log('User ID:', data.user_id);
+  console.log('Connection ID:', data.connection_id);
+});
+
+socket.on('authentication_failed', (error) => {
+  console.error('Auth failed:', error);
+});
+
+// Handle notifications
+socket.on('notification', (notification) => {
+  console.log('Notification received:', notification);
+  showNotification(notification.title, notification.message);
+});
+
+// Handle token expiry warning
+socket.on('token_expiring', (data) => {
+  console.log('Token expiring soon, refresh needed');
+  // Implement token refresh logic
+});
+
+// Send heartbeat
+setInterval(() => {
+  socket.emit('ping');
+}, 30000);
+
+socket.on('pong', (data) => {
+  console.log('Server time:', data.server_time);
+});
+```
+
+## 🏭 Production Deployment
+
+### Environment Variables
+
+```bash
+NODE_ENV=production
+JWT_SECRET=your-super-secure-production-secret
+REDIS_HOST=your-redis-server.com
+REDIS_PASSWORD=your-redis-password
+USE_HTTPS=true
+SSL_CERT_PATH=/path/to/certificate.crt
+SSL_KEY_PATH=/path/to/private.key
+CORS_ORIGIN=https://your-domain.com
+```
+
+### Using PM2
+
+```bash
+npm run pm2:start    # Start
+npm run pm2:logs     # Monitor  
+npm run pm2:restart  # Restart
+npm run pm2:stop     # Stop
+```
+
+## 🧪 Testing
+
+Generate test tokens for development:
+
+```javascript
+const JwtHelper = require('./src/utils/JwtHelper');
+const jwtHelper = new JwtHelper('your-secret');
+
+const testToken = jwtHelper.createTestToken(123, 'test_connection_123');
+console.log('Test token:', testToken);
+```
+
+Test notifications via Redis:
+
+```bash
+redis-cli PUBLISH user_notifications '{
+  "type": "user_notification",
+  "target_user_id": 123,
+  "notification": {"title": "Test", "message": "Hello"}
+}'
+```
+
+## 🔒 Security Features
+
+- Connection isolation with unique rooms per browser tab
+- Cryptographic JWT signature verification  
+- Automatic token expiration handling
+- Input validation and sanitization
+- Comprehensive audit logging
+- Rate limiting protection
+
+## 📚 Key Components
+
+### ConnectionManager
+Manages user connections, tracks connection-specific rooms, handles lifecycle:
+- `registerConnection()` - Register authenticated connection
+- `getUserConnections()` - Get all connections for user
+- `getStats()` - Get connection statistics
+
+### JwtHelper  
+Handles connection-specific JWT validation:
+- `verifyToken()` - Verify and decode JWT
+- `authenticateToken()` - Complete authentication flow
+- `createTestToken()` - Generate test tokens (dev only)
+
+## 🛠️ Troubleshooting
+
+**Authentication fails**: Check JWT secret matches, verify token structure
+**Redis errors**: Verify Redis server running, check host/port config  
+**CORS errors**: Update CORS_ORIGIN environment variable
+**SSL issues**: Verify certificate paths and validity
+
+Enable debug mode: `DEBUG_MODE=true npm start`
+
+## 📄 Documentation
+
+See [Connection-Specific Token Approach](./docs/CONNECTION_SPECIFIC_TOKEN_APPROACH.md) for complete implementation details including PHP backend integration.
+
+Built with ❤️ for secure real-time communications
