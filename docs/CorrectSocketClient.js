@@ -2,7 +2,6 @@
  * CORRECT Socket.IO Client Implementation
  * 
  * This shows the proper way to connect to Socket.IO and handle responses
- * without JSON parsing errors.
  */
 
 class CorrectSocketClient {
@@ -157,59 +156,6 @@ class CorrectSocketClient {
 }
 
 /**
- * WRONG APPROACHES THAT CAUSE JSON PARSING ERRORS:
- */
-
-class WrongApproaches {
-    
-    /**
-     * ❌ WRONG: Making HTTP requests to Socket.IO endpoints
-     */
-    async wrongHttpRequest() {
-        try {
-            // This will return Engine.IO protocol data like "40", "42", etc.
-            const response = await fetch('http://localhost:3001/socket.io/?EIO=4&transport=polling');
-            const text = await response.text();
-            
-            // ❌ ERROR: This will fail because text is "40" or similar Engine.IO data
-            const data = JSON.parse(text);  // SyntaxError: JSON.parse: unexpected character
-            
-        } catch (error) {
-            console.error('❌ This approach fails:', error);
-        }
-    }
-    
-    /**
-     * ❌ WRONG: Trying to parse Socket.IO client events as JSON
-     */
-    wrongSocketIOParsing() {
-        const socket = io('http://localhost:3001');
-        
-        socket.on('user_message', (data) => {
-            // ❌ WRONG: data is already parsed by Socket.IO
-            try {
-                const parsed = JSON.parse(data);  // This will fail if data is already an object
-            } catch (error) {
-                console.error('❌ Already parsed by Socket.IO:', error);
-            }
-        });
-    }
-    
-    /**
-     * ❌ WRONG: Accessing raw Engine.IO endpoints
-     */
-    wrongEngineIOAccess() {
-        // These return protocol frames like "40", "42", "6", etc.
-        fetch('/socket.io/?EIO=4&transport=polling&t=abcd')
-            .then(response => response.text())
-            .then(text => {
-                // text will be "40" or "6" - Engine.IO protocol data
-                JSON.parse(text);  // ❌ This fails!
-            });
-    }
-}
-
-/**
  * Example usage:
  */
 async function example() {
@@ -230,36 +176,3 @@ async function example() {
         console.error('Connection failed:', error);
     }
 }
-
-/**
- * HTML Integration:
- */
-/*
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Socket.IO Client</title>
-    <!-- IMPORTANT: Include Socket.IO client library -->
-    <script src="/socket.io/socket.io.js"></script>
-</head>
-<body>
-    <div id="messages"></div>
-    <input type="text" id="messageInput" placeholder="Type message...">
-    <button onclick="sendMessage()">Send</button>
-    
-    <script>
-        const client = new CorrectSocketClient('http://localhost:3001');
-        let jwtToken = 'your-jwt-token';  // Get from login
-        
-        // Connect when page loads
-        client.connect(jwtToken);
-        
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            client.sendMessage(input.value);
-            input.value = '';
-        }
-    </script>
-</body>
-</html>
-*/

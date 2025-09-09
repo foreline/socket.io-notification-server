@@ -6,7 +6,6 @@ This directory contains the environment configuration files for the ServiceDesk 
 
 - `.env.example` - Template with all available configuration options and documentation
 - `.env` - Your actual environment configuration (copy from .env.example)
-- `redis.config.js` - Redis-specific configuration
 
 ## Setup
 

@@ -133,7 +133,7 @@ function showStatus() {
     
     // Check config
     try {
-        const config = require('./src/utils/config.js');
+        const config = require('../src/utils/config.js');
         console.log(`\nCurrent Configuration:`);
         console.log(`USE_HTTPS: ${config.server.useHttps}`);
         console.log(`SSL_CERT_PATH: ${config.ssl.certPath}`);
