@@ -119,6 +119,19 @@ app.use(express.json());
 app.options('*', cors(serverConfig.cors));
 
 /**
+ * Apply Authentication Middleware to Socket.IO
+ */
+io.use((socket, next) => {
+    console.log(`🔐 [MIDDLEWARE] Processing authentication for socket ${socket.id}`);
+    console.log(`📍 [MIDDLEWARE] Client IP: ${socket.handshake.address}`);
+    console.log(`🌐 [MIDDLEWARE] User Agent: ${socket.handshake.headers['user-agent']}`);
+    console.log(`🎫 [MIDDLEWARE] Auth token: ${socket.handshake.auth?.token ? 'PROVIDED' : 'MISSING'}`);
+    console.log(`🔍 [MIDDLEWARE] Query token: ${socket.handshake.query?.token ? 'PROVIDED' : 'MISSING'}`);
+    
+    authMiddleware.handle(socket, next);
+});
+
+/**
  * Socket.IO Connection Handler with Connection-Specific Authentication
  */
 io.on('connection', (socket) => {
@@ -132,17 +145,35 @@ io.on('connection', (socket) => {
      */
     const handleAuthentication = async () => {
         try {
+            console.log(`🔍 [AUTH-CHECK] Checking authentication for socket ${socket.id}`);
+            console.log(`🔍 [AUTH-CHECK] authResult exists: ${!!socket.authResult}`);
+            console.log(`🔍 [AUTH-CHECK] tokenPayload exists: ${!!socket.tokenPayload}`);
+            
             if (!socket.authResult || !socket.tokenPayload) {
                 throw new Error('Socket not properly authenticated by middleware');
             }
             
+            console.log(`✅ [AUTH-CHECK] Socket ${socket.id} has valid authentication data`);
+            
             const { payload, userInfo } = socket.authResult;
+            
+            // Set socket properties for connection management
+            socket.userId = userInfo.userId;
+            socket.connectionId = userInfo.connectionId;
+            socket.userInfo = userInfo;
+            
+            console.log(`🔐 [AUTH-CHECK] User: ${userInfo.userId}, Connection: ${userInfo.connectionId}`);
             
             // Register connection with ConnectionManager
             const registrationResult = connectionManager.registerConnection(socket, payload);
             
+            // Debug connection registration
+            if (socketDebugger) {
+                socketDebugger.logConnectionRegistration(socket, registrationResult);
+            }
+            
             if (!registrationResult.success) {
-                throw new Error('Failed to register connection');
+                throw new Error(`Connection registration failed: ${registrationResult.error || 'Unknown error'}`);
             }
             
             // Join connection-specific room
@@ -155,7 +186,7 @@ io.on('connection', (socket) => {
             
             console.log(`✅ Socket ${socket.id} joined rooms: ${connectionRoom}, ${userRoom}`);
             
-            // Send authentication success response
+            // Send authentication success response with helpful message
             socket.emit('authenticated', {
                 success: true,
                 user_id: userInfo.userId,
@@ -166,7 +197,8 @@ io.on('connection', (socket) => {
                 expires_at: userInfo.expiresAt,
                 rooms: [connectionRoom, userRoom],
                 server_time: new Date().toISOString(),
-                connection_count: registrationResult.userConnectionCount
+                connection_count: registrationResult.userConnectionCount,
+                message: 'Authentication successful. You are now connected.'
             });
             
             // Set up token expiry warning
@@ -179,7 +211,8 @@ io.on('connection', (socket) => {
                             socket.emit('token_expiring', {
                                 expires_at: userInfo.expiresAt,
                                 warning_seconds: 300,
-                                current_time: new Date().toISOString()
+                                current_time: new Date().toISOString(),
+                                message: 'Your authentication token will expire soon. Please refresh your session.'
                             });
                         }
                     }, warningDelay);
@@ -195,20 +228,45 @@ io.on('connection', (socket) => {
             
         } catch (error) {
             console.error(`❌ Authentication setup failed for socket ${socket.id}:`, error.message);
+            console.error(`❌ Error details:`, {
+                hasAuthResult: !!socket.authResult,
+                hasTokenPayload: !!socket.tokenPayload,
+                errorType: error.constructor.name,
+                errorMessage: error.message
+            });
             
             // Debug authentication failure
             if (socketDebugger) {
                 socketDebugger.logAuthComplete(socket, false, error);
             }
             
+            // Determine error type and provide appropriate client message
+            let errorCode = 'AUTH_FAILED';
+            let clientMessage = 'Authentication failed. Please check your credentials and try again.';
+            
+            if (error.message.includes('middleware')) {
+                errorCode = 'AUTH_MIDDLEWARE_FAILED';
+                clientMessage = 'Authentication middleware rejected your connection. Please verify your token and try reconnecting.';
+            } else if (error.message.includes('registration')) {
+                errorCode = 'CONNECTION_REGISTRATION_FAILED';  
+                clientMessage = 'Failed to register your connection. Please try reconnecting.';
+            } else if (error.message.includes('Token validation failed')) {
+                errorCode = 'TOKEN_VALIDATION_FAILED';
+                clientMessage = 'Your authentication token is invalid. Please obtain a new token and try again.';
+            }
+            
             socket.emit('authentication_failed', {
-                error: error.message,
+                error: 'Authentication failed',
+                code: errorCode,
+                message: clientMessage,
                 timestamp: new Date().toISOString(),
-                socket_id: socket.id
+                socket_id: socket.id,
+                reconnect_suggested: true,
+                help: 'If this problem persists, please contact support.'
             });
             
             // Disconnect after delay with detailed logging
-            console.log(`⏰ [DISCONNECT-SCHEDULED] Socket ${socket.id} will disconnect in 5 seconds due to auth failure`);
+            console.log(`⏰ [DISCONNECT-SCHEDULED] Socket ${socket.id} will disconnect in 5 seconds due to auth failure: ${error.message}`);
             setTimeout(() => {
                 if (!socket.userId) {
                     console.log(`🔌 [DISCONNECT-EXECUTING] Socket ${socket.id} disconnecting due to authentication failure`);

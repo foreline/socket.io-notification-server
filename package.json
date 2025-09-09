@@ -1,51 +1,41 @@
-{
+﻿{
   "name": "servicedesk-socketio-server",
   "version": "1.0.0",
   "description": "Socket.IO server for ServiceDesk real-time notifications with connection-specific JWT authentication",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
+    "start": "pm2 start ecosystem.config.js",
     "dev": "nodemon src/server.js",
-    "test": "node test-cors.js",
-    "test:cors": "node test-cors.js",
-    "test:socketio": "node test-socketio.js",
-    "debug:json": "node debug-json-parsing.js",
-    "debug:auth": "node src/utils/TokenGenerator.js",
-    "ssl:generate": "node generate-ssl.js generate",
-    "ssl:status": "node generate-ssl.js status",
-    "ssl:diagnose": "node diagnose-ssl.js",
-    "pm2:start": "pm2 start ecosystem.config.js",
-    "pm2:stop": "pm2 stop ecosystem.config.js",
-    "pm2:restart": "pm2 restart ecosystem.config.js",
-    "pm2:logs": "pm2 logs"
+    "stop": "pm2 stop all",
+    "restart": "pm2 restart all",
+    "logs": "pm2 logs",
+    "debug:auth": "node -e \"const TokenGenerator = require('./src/utils/TokenGenerator'); new TokenGenerator().printTestTokens();\"",
+    "debug:server": "nodemon src/server.js",
+    "test:token": "node -e \"const TG = require('./src/utils/TokenGenerator'); const tg = new TG(); console.log('Test token:', tg.generateConnectionToken('test-user', 'test-conn'));\""
   },
   "dependencies": {
-    "@socket.io/redis-adapter": "^8.3.0",
+    "socket.io": "^4.7.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "ioredis": "^5.5.0",
     "jsonwebtoken": "^9.0.2",
-    "pm2": "^5.4.3",
-    "socket.io": "^4.8.1",
-    "uuid": "^11.0.5"
+    "redis": "^4.6.7",
+    "dotenv": "^16.3.1",
+    "joi": "^17.9.2",
+    "express": "^4.18.2",
+    "helmet": "^7.0.0",
+    "express-rate-limit": "^6.9.0",
+    "winston": "^3.10.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
   "keywords": [
     "socket.io",
+    "jwt",
+    "authentication",
     "real-time",
     "notifications",
-    "jwt",
-    "redis",
-    "servicedesk",
-    "connection-specific",
-    "authentication"
+    "servicedesk"
   ],
   "author": "ServiceDesk Team",
-  "license": "MIT",
-  "engines": {
-    "node": ">=16.0.0"
-  }
+  "license": "MIT"
 }
