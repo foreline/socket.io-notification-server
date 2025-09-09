@@ -10,6 +10,7 @@
     "test:cors": "node test-cors.js",
     "test:socketio": "node test-socketio.js",
     "debug:json": "node debug-json-parsing.js",
+    "debug:auth": "node src/utils/TokenGenerator.js",
     "ssl:generate": "node generate-ssl.js generate",
     "ssl:status": "node generate-ssl.js status",
     "ssl:diagnose": "node diagnose-ssl.js",

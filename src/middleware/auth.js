@@ -5,13 +5,14 @@
 const JwtHelper = require('../utils/JwtHelper');
 
 class AuthMiddleware {
-    constructor(secretKey) {
+    constructor(secretKey, authDebugger = null) {
         if (!secretKey) {
             throw new Error('JWT secret key is required for authentication middleware');
         }
         
         this.jwtHelper = new JwtHelper(secretKey);
         this.secretKey = secretKey;
+        this.authDebugger = authDebugger;
     }
     
     /**
@@ -41,17 +42,40 @@ class AuthMiddleware {
             // Extract token from auth payload or query parameters
             const token = socket.handshake.auth?.token || socket.handshake.query?.token;
             
+            // Debug authentication start
+            if (this.authDebugger) {
+                this.authDebugger.logAuthStart(socket, token);
+            }
+            
             if (!token) {
                 const error = new Error('Authentication required: No token provided');
                 error.data = { 
                     code: 'NO_TOKEN',
-                    timestamp: new Date().toISOString() 
+                    timestamp: new Date().toISOString(),
+                    clientIP: socket.handshake.address,
+                    userAgent: socket.handshake.headers['user-agent']
                 };
+                
+                console.log(`❌ [AUTH-NO-TOKEN] Socket ${socket.id} from ${socket.handshake.address}`);
                 return next(error);
             }
             
             // Validate the connection-specific JWT token
-            const authResult = this.validateToken(token);
+            let authResult;
+            try {
+                authResult = this.validateToken(token);
+                
+                // Debug successful validation
+                if (this.authDebugger) {
+                    this.authDebugger.logTokenValidation(socket, token, authResult, null);
+                }
+            } catch (validationError) {
+                // Debug failed validation
+                if (this.authDebugger) {
+                    this.authDebugger.logTokenValidation(socket, token, null, validationError);
+                }
+                throw validationError;
+            }
             
             // Store authentication information in socket
             socket.authResult = authResult;
@@ -74,7 +98,8 @@ class AuthMiddleware {
                 code: 'AUTH_FAILED',
                 timestamp: new Date().toISOString(),
                 socketId: socket.id,
-                reason: error.message
+                reason: error.message,
+                clientIP: socket.handshake.address
             };
             
             next(authError);

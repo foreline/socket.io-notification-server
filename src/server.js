@@ -1,7 +1,17 @@
 /**
  * Socket.IO Server for Connection-Specific Authentication
  * 
- * This server handles connection-specific JWT authentication and real-time notifications
+ * This server handles connection-specific JWT authenticatio            // Register connection with manager
+            const registrationResult = connectionManager.registerConnection(socket, payload);
+            
+            // Debug connection registration
+            if (socketDebugger) {
+                socketDebugger.logConnectionRegistration(socket, registrationResult);
+            }
+            
+            if (!registrationResult.success) {
+                throw new Error('Failed to register connection');
+            }real-time notifications
  * for the ServiceDesk system. Each browser tab gets a unique room based on their
  * connection-specific token.
  */
@@ -17,11 +27,13 @@ const config = require('./utils/config.js');
 const LoggerMiddleware = require('./middleware/logger.js');
 const AuthMiddleware = require('./middleware/auth.js');
 const ConnectionManager = require('./utils/ConnectionManager.js');
+const SocketIODebugger = require('./utils/SocketIODebugger.js');
 
 // Initialize core components
 const app = express();
 const logger = new LoggerMiddleware();
 const connectionManager = new ConnectionManager();
+const socketDebugger = new SocketIODebugger();
 
 // Configuration
 const serverConfig = {
@@ -42,7 +54,7 @@ if (!serverConfig.jwtSecret || serverConfig.jwtSecret === 'your-super-secret-jwt
 }
 
 // Initialize authentication middleware
-const authMiddleware = new AuthMiddleware(serverConfig.jwtSecret);
+const authMiddleware = new AuthMiddleware(serverConfig.jwtSecret, socketDebugger);
 
 // Create HTTP/HTTPS server based on configuration
 let server;
@@ -176,8 +188,18 @@ io.on('connection', (socket) => {
             
             console.log(`🔐 Authentication completed for user ${userInfo.userId}, connection ${userInfo.connectionId}`);
             
+            // Debug authentication completion
+            if (socketDebugger) {
+                socketDebugger.logAuthComplete(socket, true, null);
+            }
+            
         } catch (error) {
             console.error(`❌ Authentication setup failed for socket ${socket.id}:`, error.message);
+            
+            // Debug authentication failure
+            if (socketDebugger) {
+                socketDebugger.logAuthComplete(socket, false, error);
+            }
             
             socket.emit('authentication_failed', {
                 error: error.message,
@@ -185,9 +207,11 @@ io.on('connection', (socket) => {
                 socket_id: socket.id
             });
             
-            // Disconnect after delay
+            // Disconnect after delay with detailed logging
+            console.log(`⏰ [DISCONNECT-SCHEDULED] Socket ${socket.id} will disconnect in 5 seconds due to auth failure`);
             setTimeout(() => {
                 if (!socket.userId) {
+                    console.log(`🔌 [DISCONNECT-EXECUTING] Socket ${socket.id} disconnecting due to authentication failure`);
                     socket.disconnect(true);
                 }
             }, 5000);
@@ -287,6 +311,11 @@ io.on('connection', (socket) => {
     socket.on('disconnect', (reason) => {
         const connectedDuration = Date.now() - socket.connectedAt.getTime();
         
+        // Debug disconnection
+        if (socketDebugger) {
+            socketDebugger.logDisconnection(socket, reason);
+        }
+        
         console.log(`🔌 Socket ${socket.id} disconnected: ${reason} (connected for ${connectedDuration}ms)`);
         
         // Unregister connection
@@ -302,7 +331,8 @@ io.on('connection', (socket) => {
                 connection_id: socket.connectionId || null,
                 reason,
                 connected_duration_ms: connectedDuration,
-                remaining_user_connections: unregResult.remainingUserConnections || 0
+                remaining_user_connections: unregResult.remainingUserConnections || 0,
+                was_authenticated: !!socket.userId
             }
         );
         console.log(JSON.stringify(logEntry));
@@ -311,11 +341,18 @@ io.on('connection', (socket) => {
     // Auto-disconnect unauthenticated connections after timeout
     setTimeout(() => {
         if (!socket.userId) {
-            console.log(`⏰ Disconnecting unauthenticated socket ${socket.id} after timeout`);
+            console.log(`⏰ [DISCONNECT-TIMEOUT] Socket ${socket.id} disconnecting after ${config.socketIo.authTimeout}ms timeout (unauthenticated)`);
             socket.disconnect(true);
         }
     }, config.socketIo.authTimeout);
 });
+
+// Periodic debugging summary (every 30 seconds)
+setInterval(() => {
+    if (socketDebugger) {
+        socketDebugger.printSummary();
+    }
+}, 30000);
 
 /**
  * Express Routes for Health Checks and Management
