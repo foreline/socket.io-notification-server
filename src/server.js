@@ -46,18 +46,40 @@ const authMiddleware = new AuthMiddleware(serverConfig.jwtSecret);
 
 // Create HTTP/HTTPS server based on configuration
 let server;
-if (serverConfig.useHttps && config.ssl.certPath && config.ssl.keyPath) {
-    const options = {
-        cert: fs.readFileSync(config.ssl.certPath),
-        key: fs.readFileSync(config.ssl.keyPath),
-    };
-    server = https.createServer(options, app);
-    console.log('🔒 HTTPS server configured');
+if (serverConfig.useHttps) {
+    try {
+        // Check if SSL files exist
+        if (!fs.existsSync(config.ssl.certPath)) {
+            throw new Error(`SSL certificate not found: ${config.ssl.certPath}`);
+        }
+        if (!fs.existsSync(config.ssl.keyPath)) {
+            throw new Error(`SSL private key not found: ${config.ssl.keyPath}`);
+        }
+        
+        const options = {
+            cert: fs.readFileSync(config.ssl.certPath),
+            key: fs.readFileSync(config.ssl.keyPath),
+        };
+        server = https.createServer(options, app);
+        console.log('🔒 HTTPS server configured');
+        console.log(`   Certificate: ${config.ssl.certPath}`);
+        console.log(`   Private Key: ${config.ssl.keyPath}`);
+    } catch (error) {
+        console.error('❌ HTTPS configuration failed:', error.message);
+        console.log('📋 Falling back to HTTP server');
+        console.log('💡 To fix HTTPS:');
+        console.log('   1. Set USE_HTTPS=false in config/.env for HTTP only');
+        console.log('   2. Or provide valid SSL certificates in SSL_CERT_PATH and SSL_KEY_PATH');
+        server = http.createServer(app);
+    }
 } else {
     server = http.createServer(app);
     console.log('🌐 HTTP server configured');
     if (config.server.nodeEnv === 'production') {
         console.warn('⚠️ WARNING: Running HTTP in production! Consider enabling HTTPS.');
+        console.log('💡 To enable HTTPS:');
+        console.log('   1. Set USE_HTTPS=true in config/.env');
+        console.log('   2. Configure SSL_CERT_PATH and SSL_KEY_PATH');
     }
 }
 
