@@ -24,7 +24,11 @@ class JwtHelper {
      */
     verifyToken(token) {
         try {
-            return jwt.verify(token, this.secretKey);
+            return jwt.verify(token, this.secretKey, {
+                issuer: 'servicedesk-server',
+                audience: 'servicedesk-client',
+                clockTolerance: 10  // Allow 10 seconds clock skew
+            });
         } catch (error) {
             throw new Error(`JWT verification failed: ${error.message}`);
         }
@@ -48,35 +52,41 @@ class JwtHelper {
      * @throws {Error} If payload is invalid
      */
     validatePayload(payload) {
-        const required = ['user_id', 'connection_id', 'exp', 'iat', 'jti'];
+        // Required fields - use strict null/undefined checks
+        const required = ['user_id', 'connection_id', 'exp', 'iat'];
         
         for (const field of required) {
-            if (!payload[field]) {
+            if (payload[field] === undefined || payload[field] === null) {
                 throw new Error(`Missing required field: ${field}`);
             }
         }
 
-        // Check token expiration
+        // Check token expiration (jwt.verify already checks this, but double-check)
         if (this.isTokenExpired(payload)) {
             throw new Error('Token expired');
         }
 
-        // Validate user_id is a number
-        if (!Number.isInteger(payload.user_id) || payload.user_id <= 0) {
-            throw new Error('Invalid user_id');
+        // Validate user_id is a number (allow 0 as valid user ID)
+        if (!Number.isInteger(payload.user_id) || payload.user_id < 0) {
+            throw new Error('Invalid user_id: must be a non-negative integer');
         }
 
         // Validate connection_id format
         if (typeof payload.connection_id !== 'string' || !payload.connection_id.trim()) {
-            throw new Error('Invalid connection_id');
+            throw new Error('Invalid connection_id: must be a non-empty string');
         }
 
-        // Validate timestamps
-        if (payload.iat > Math.floor(Date.now() / 1000)) {
+        // Validate timestamps with clock skew tolerance
+        const now = Math.floor(Date.now() / 1000);
+        const clockSkew = 10; // 10 seconds tolerance
+        
+        if (payload.iat > now + clockSkew) {
             throw new Error('Token issued in the future');
         }
 
-        if (payload.nbf && payload.nbf > Math.floor(Date.now() / 1000)) {
+        // Note: nbf (not before) is now handled by jwt.verify() with clockTolerance
+        // but we keep this check for extra safety
+        if (payload.nbf && payload.nbf > now + clockSkew) {
             throw new Error('Token not yet valid');
         }
 
@@ -130,28 +140,28 @@ class JwtHelper {
             throw new Error('Test token creation not allowed in production');
         }
 
+        const crypto = require('crypto');
         const now = Math.floor(Date.now() / 1000);
         
         const payload = {
-            iss: 'servicedesk-test',
-            aud: 'socket.io',
-            iat: now,
-            exp: now + (expirationHours * 3600),
-            nbf: now,
-            jti: connectionId,
-            
             // User-specific claims
             user_id: parseInt(userId),
             connection_id: connectionId,
             session_id: 'test_session_' + Date.now(),
             user_agent_hash: 'test_ua_hash',
             ip_hash: 'test_ip_hash',
+            jti: crypto.randomBytes(16).toString('hex'), // Unique JWT ID
             
             // Merge additional claims
             ...additionalClaims
         };
 
-        return jwt.sign(payload, this.secretKey);
+        return jwt.sign(payload, this.secretKey, {
+            issuer: 'servicedesk-server',
+            audience: 'servicedesk-client',
+            expiresIn: expirationHours + 'h',
+            notBefore: 0
+        });
     }
 
     /**
@@ -186,22 +196,61 @@ class JwtHelper {
      */
     authenticateToken(token) {
         if (!token) {
+            console.error('❌ [JWT-AUTH] No token provided');
             throw new Error('No token provided');
         }
 
-        // Verify and decode token
-        const payload = this.verifyToken(token);
-        
-        // Validate payload structure
-        this.validatePayload(payload);
+        console.log('🔐 [JWT-AUTH] Starting token authentication');
+        console.log(`📏 [JWT-AUTH] Token length: ${token.length} characters`);
+        console.log(`📄 [JWT-AUTH] Token preview: ${token.substring(0, 50)}...`);
 
-        // Return structured user information
-        return {
-            payload,
-            userInfo: this.getTokenInfo(payload),
-            fingerprint: this.extractFingerprint(payload),
-            expiryWarning: this.getExpiryWarningTime(payload)
-        };
+        try {
+            // Verify and decode token
+            console.log('🔍 [JWT-AUTH] Verifying token signature and claims...');
+            const payload = this.verifyToken(token);
+            console.log('✅ [JWT-AUTH] Token signature valid');
+            console.log('✅ [JWT-AUTH] Issuer/Audience validated');
+            console.log(`👤 [JWT-AUTH] User ID: ${payload.user_id}`);
+            console.log(`🔗 [JWT-AUTH] Connection ID: ${payload.connection_id}`);
+            
+            // Validate payload structure
+            console.log('🔍 [JWT-AUTH] Validating payload structure...');
+            this.validatePayload(payload);
+            console.log('✅ [JWT-AUTH] Payload structure valid');
+            
+            const expiresAt = new Date(payload.exp * 1000);
+            const timeToExpiry = Math.floor((payload.exp * 1000 - Date.now()) / 1000);
+            console.log(`⏰ [JWT-AUTH] Token expires at: ${expiresAt.toISOString()} (in ${timeToExpiry}s)`);
+
+            // Return structured user information
+            const authResult = {
+                payload,
+                userInfo: this.getTokenInfo(payload),
+                fingerprint: this.extractFingerprint(payload),
+                expiryWarning: this.getExpiryWarningTime(payload)
+            };
+            
+            console.log('🎉 [JWT-AUTH] Authentication successful');
+            return authResult;
+            
+        } catch (error) {
+            console.error('❌ [JWT-AUTH] Authentication failed:', error.message);
+            
+            // Provide more specific error messages
+            if (error.message.includes('jwt expired')) {
+                console.error('⏰ [JWT-AUTH] TOKEN EXPIRED - Token has passed its expiration time');
+            } else if (error.message.includes('invalid signature')) {
+                console.error('🔐 [JWT-AUTH] INVALID SIGNATURE - Token signature verification failed');
+            } else if (error.message.includes('jwt malformed')) {
+                console.error('📄 [JWT-AUTH] MALFORMED TOKEN - Token format is invalid');
+            } else if (error.message.includes('invalid issuer')) {
+                console.error('🏢 [JWT-AUTH] INVALID ISSUER - Token was not issued by servicedesk-server');
+            } else if (error.message.includes('invalid audience')) {
+                console.error('🎯 [JWT-AUTH] INVALID AUDIENCE - Token is not intended for servicedesk-client');
+            }
+            
+            throw error;
+        }
     }
 }
 

@@ -21,13 +21,15 @@ class TokenGenerator {
         const expiresIn = options.expiresIn || '1h';
         const isAdmin = options.isAdmin || false;
         const fullName = options.fullName || `User ${userId}`;
+        const jti = crypto.randomBytes(16).toString('hex'); // Unique JWT ID
 
         const payload = {
-            user_id: userId,
+            user_id: parseInt(userId), // Ensure it's a number
             connection_id: connectionId,
             username: username,
             full_name: fullName,
             is_admin: isAdmin,
+            jti: jti, // Add JWT ID for token uniqueness
             created_at: new Date().toISOString()
         };
 
@@ -40,6 +42,7 @@ class TokenGenerator {
         return {
             token,
             payload,
+            jti,
             expires_in: expiresIn,
             created_at: payload.created_at
         };
@@ -101,11 +104,12 @@ class TokenGenerator {
         // Already expired token (for error testing)
         try {
             const expiredToken = jwt.sign({
-                user_id: 'expired_user',
+                user_id: 999, // Ensure it's a number
                 connection_id: this.generateConnectionId(),
                 username: 'expireduser',
                 full_name: 'Expired User',
                 is_admin: false,
+                jti: crypto.randomBytes(16).toString('hex'),
                 created_at: new Date(Date.now() - 3600000).toISOString() // 1 hour ago
             }, this.secretKey, {
                 expiresIn: '-1h', // Already expired
