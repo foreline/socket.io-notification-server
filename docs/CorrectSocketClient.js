@@ -2,6 +2,18 @@
  * CORRECT Socket.IO Client Implementation
  * 
  * This shows the proper way to connect to Socket.IO and handle responses
+ * 
+ * IMPORTANT: Your JWT token MUST be generated with:
+ *   - issuer: 'servicedesk-server'
+ *   - audience: 'servicedesk-client'
+ *   - user_id: numeric integer (not string like 'user123')
+ * 
+ * Use TokenGenerator on server side or ensure your token generator includes:
+ *   jwt.sign(payload, secret, {
+ *     issuer: 'servicedesk-server',
+ *     audience: 'servicedesk-client',
+ *     expiresIn: '1h'
+ *   })
  */
 
 class CorrectSocketClient {
@@ -46,15 +58,47 @@ class CorrectSocketClient {
             // Handle authentication responses
             this.socket.on('authenticated', (data) => {
                 console.log('🔐 Authentication successful:', data);
-                this.authToken = data.connectionToken;
+                console.log('   User:', data.username, `(ID: ${data.user_id})`);
+                console.log('   Connection ID:', data.connection_id);
+                console.log('   Token expires:', data.expires_at);
+                console.log('   Active connections:', data.connection_count);
                 
-                // Store the connection-specific token for this tab
-                sessionStorage.setItem('connectionToken', this.authToken);
+                // Store connection info
+                this.authToken = data.connection_id;
+                sessionStorage.setItem('connectionId', data.connection_id);
+                sessionStorage.setItem('userId', data.user_id);
             });
 
             this.socket.on('authentication_failed', (data) => {
                 console.error('🚫 Authentication failed:', data);
-                // Handle authentication failure
+                console.error('   Code:', data.code);
+                console.error('   Message:', data.message);
+                console.error('   Help:', data.help);
+                
+                // Common fixes for authentication errors:
+                if (data.code === 'AUTH_FAILED' && data.message.includes('audience invalid')) {
+                    console.error('❌ TOKEN AUDIENCE MISMATCH!');
+                    console.error('   Your token must be generated with audience: "servicedesk-client"');
+                    console.error('   Check your token generation code or use TokenGenerator utility');
+                }
+                
+                // Handle authentication failure - possibly redirect to login
+                if (typeof window !== 'undefined') {
+                    // Browser environment
+                    setTimeout(() => {
+                        alert('Authentication failed: ' + data.message);
+                        // window.location.href = '/login';
+                    }, 1000);
+                }
+            });
+            
+            // Handle token expiring warning
+            this.socket.on('token_expiring', (data) => {
+                console.warn('⚠️ Token expiring soon:', data.expires_at);
+                console.warn('   Please refresh your session');
+                
+                // Trigger token refresh logic
+                this.handleTokenExpiring(data);
             });
 
             // Handle application events
@@ -140,6 +184,34 @@ class CorrectSocketClient {
         
         // Show notification to user
         // NO JSON.parse needed!
+    }
+
+    /**
+     * Refresh authentication token
+     * IMPORTANT: New token must have same user_id as original
+     */
+    refreshToken(newJwtToken) {
+        if (!this.isConnected) {
+            console.error('❌ Not connected to server');
+            return;
+        }
+
+        console.log('🔄 Refreshing authentication token...');
+        this.socket.emit('refresh_token', { token: newJwtToken });
+    }
+
+    /**
+     * Handle token expiring warning
+     */
+    handleTokenExpiring(data) {
+        // Implement your token refresh logic here
+        // For example, request a new token from your backend
+        console.warn('⚠️ Implement token refresh logic');
+        
+        // Example:
+        // fetch('/api/refresh-token', { method: 'POST' })
+        //   .then(res => res.json())
+        //   .then(data => this.refreshToken(data.token));
     }
 
     /**
