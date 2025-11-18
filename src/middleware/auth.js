@@ -39,8 +39,8 @@ class AuthMiddleware {
      */
     handle(socket, next) {
         try {
-            // Extract token from auth payload or query parameters
-            const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+            // Extract token strictly from auth payload (query tokens deprecated for security)
+            const token = socket.handshake.auth?.token;
             
             // Debug authentication start
             if (this.authDebugger) {
@@ -48,7 +48,7 @@ class AuthMiddleware {
             }
             
             if (!token) {
-                const error = new Error('Authentication required: No token provided');
+                const error = new Error('Authentication required: No token provided (use auth.token, query tokens disabled)');
                 error.data = { 
                     code: 'NO_TOKEN',
                     timestamp: new Date().toISOString(),

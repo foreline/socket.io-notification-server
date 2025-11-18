@@ -27,7 +27,8 @@ class JwtHelper {
             return jwt.verify(token, this.secretKey, {
                 issuer: 'servicedesk-server',
                 audience: 'servicedesk-client',
-                clockTolerance: 10  // Allow 10 seconds clock skew
+                algorithms: ['HS256'], // Explicit algorithm whitelisting
+                clockTolerance: 10
             });
         } catch (error) {
             throw new Error(`JWT verification failed: ${error.message}`);
@@ -200,27 +201,32 @@ class JwtHelper {
             throw new Error('No token provided');
         }
 
-        console.log('🔐 [JWT-AUTH] Starting token authentication');
-        console.log(`📏 [JWT-AUTH] Token length: ${token.length} characters`);
-        console.log(`📄 [JWT-AUTH] Token preview: ${token.substring(0, 50)}...`);
+        const debugMode = process.env.DEBUG_MODE === 'true';
+        if (debugMode) {
+            console.log('🔐 [JWT-AUTH] Starting token authentication');
+            console.log(`📏 [JWT-AUTH] Token length: ${token.length} characters`);
+            console.log(`📄 [JWT-AUTH] Token preview: ${token.substring(0, 50)}...`);
+        }
 
         try {
             // Verify and decode token
-            console.log('🔍 [JWT-AUTH] Verifying token signature and claims...');
+            if (debugMode) console.log('🔍 [JWT-AUTH] Verifying token signature and claims...');
             const payload = this.verifyToken(token);
-            console.log('✅ [JWT-AUTH] Token signature valid');
-            console.log('✅ [JWT-AUTH] Issuer/Audience validated');
-            console.log(`👤 [JWT-AUTH] User ID: ${payload.user_id}`);
-            console.log(`🔗 [JWT-AUTH] Connection ID: ${payload.connection_id}`);
+            if (debugMode) {
+                console.log('✅ [JWT-AUTH] Token signature valid');
+                console.log('✅ [JWT-AUTH] Issuer/Audience validated');
+                console.log(`👤 [JWT-AUTH] User ID: ${payload.user_id}`);
+                console.log(`🔗 [JWT-AUTH] Connection ID: ${payload.connection_id}`);
+            }
             
             // Validate payload structure
-            console.log('🔍 [JWT-AUTH] Validating payload structure...');
+            if (debugMode) console.log('🔍 [JWT-AUTH] Validating payload structure...');
             this.validatePayload(payload);
-            console.log('✅ [JWT-AUTH] Payload structure valid');
+            if (debugMode) console.log('✅ [JWT-AUTH] Payload structure valid');
             
             const expiresAt = new Date(payload.exp * 1000);
             const timeToExpiry = Math.floor((payload.exp * 1000 - Date.now()) / 1000);
-            console.log(`⏰ [JWT-AUTH] Token expires at: ${expiresAt.toISOString()} (in ${timeToExpiry}s)`);
+            if (debugMode) console.log(`⏰ [JWT-AUTH] Token expires at: ${expiresAt.toISOString()} (in ${timeToExpiry}s)`);
 
             // Return structured user information
             const authResult = {
@@ -230,23 +236,25 @@ class JwtHelper {
                 expiryWarning: this.getExpiryWarningTime(payload)
             };
             
-            console.log('🎉 [JWT-AUTH] Authentication successful');
+            if (debugMode) console.log('🎉 [JWT-AUTH] Authentication successful');
             return authResult;
             
         } catch (error) {
-            console.error('❌ [JWT-AUTH] Authentication failed:', error.message);
+            if (debugMode) console.error('❌ [JWT-AUTH] Authentication failed:', error.message);
             
             // Provide more specific error messages
-            if (error.message.includes('jwt expired')) {
-                console.error('⏰ [JWT-AUTH] TOKEN EXPIRED - Token has passed its expiration time');
-            } else if (error.message.includes('invalid signature')) {
-                console.error('🔐 [JWT-AUTH] INVALID SIGNATURE - Token signature verification failed');
-            } else if (error.message.includes('jwt malformed')) {
-                console.error('📄 [JWT-AUTH] MALFORMED TOKEN - Token format is invalid');
-            } else if (error.message.includes('invalid issuer')) {
-                console.error('🏢 [JWT-AUTH] INVALID ISSUER - Token was not issued by servicedesk-server');
-            } else if (error.message.includes('invalid audience')) {
-                console.error('🎯 [JWT-AUTH] INVALID AUDIENCE - Token is not intended for servicedesk-client');
+            if (debugMode) {
+                if (error.message.includes('jwt expired')) {
+                    console.error('⏰ [JWT-AUTH] TOKEN EXPIRED');
+                } else if (error.message.includes('invalid signature')) {
+                    console.error('🔐 [JWT-AUTH] INVALID SIGNATURE');
+                } else if (error.message.includes('jwt malformed')) {
+                    console.error('📄 [JWT-AUTH] MALFORMED TOKEN');
+                } else if (error.message.includes('invalid issuer')) {
+                    console.error('🏢 [JWT-AUTH] INVALID ISSUER');
+                } else if (error.message.includes('invalid audience')) {
+                    console.error('🎯 [JWT-AUTH] INVALID AUDIENCE');
+                }
             }
             
             throw error;

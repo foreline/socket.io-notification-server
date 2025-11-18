@@ -288,6 +288,17 @@ io.on('connection', (socket) => {
             
             // Validate new token
             const authResult = authMiddleware.validateToken(token);
+
+            // Enforce same user identity on refresh
+            if (socket.userId && authResult.userInfo.userId !== socket.userId) {
+                console.warn(`⚠️ Refresh rejected: user change attempted from ${socket.userId} to ${authResult.userInfo.userId}`);
+                socket.emit('authentication_failed', {
+                    error: 'Token refresh rejected: user mismatch',
+                    code: 'REFRESH_USER_MISMATCH',
+                    timestamp: new Date().toISOString()
+                });
+                return;
+            }
             
             // Update socket authentication info
             socket.authResult = authResult;

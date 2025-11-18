@@ -17,20 +17,30 @@ class TokenGenerator {
      * Generate a connection-specific JWT token
      */
     generateConnectionToken(userId, username, options = {}) {
+        // Enforce numeric user IDs to align with validation logic
+        let numericUserId = userId;
+        if (typeof numericUserId === 'string') {
+            numericUserId = Number(numericUserId);
+        }
+        if (!Number.isInteger(numericUserId) || numericUserId < 0) {
+            throw new Error('Invalid userId supplied to TokenGenerator: must be a non-negative integer');
+        }
+
         const connectionId = options.connectionId || this.generateConnectionId();
         const expiresIn = options.expiresIn || '1h';
         const isAdmin = options.isAdmin || false;
-        const fullName = options.fullName || `User ${userId}`;
+        const fullName = options.fullName || `User ${numericUserId}`;
         const jti = crypto.randomBytes(16).toString('hex'); // Unique JWT ID
 
+        const nowIso = new Date().toISOString();
         const payload = {
-            user_id: parseInt(userId), // Ensure it's a number
+            user_id: numericUserId,
             connection_id: connectionId,
             username: username,
             full_name: fullName,
             is_admin: isAdmin,
-            jti: jti, // Add JWT ID for token uniqueness
-            created_at: new Date().toISOString()
+            jti: jti,
+            created_at: nowIso
         };
 
         const token = jwt.sign(payload, this.secretKey, {
@@ -44,7 +54,7 @@ class TokenGenerator {
             payload,
             jti,
             expires_in: expiresIn,
-            created_at: payload.created_at
+            created_at: nowIso
         };
     }
 
@@ -76,7 +86,7 @@ class TokenGenerator {
         // Valid token
         tokens.push({
             name: 'Valid Token (1 hour)',
-            ...this.generateConnectionToken('user123', 'testuser', { 
+            ...this.generateConnectionToken(123, 'testuser', { 
                 fullName: 'Test User',
                 expiresIn: '1h' 
             })
@@ -85,7 +95,7 @@ class TokenGenerator {
         // Short-lived token (for expiration testing)
         tokens.push({
             name: 'Short-lived Token (10 seconds)',
-            ...this.generateConnectionToken('user456', 'shortuser', { 
+            ...this.generateConnectionToken(456, 'shortuser', { 
                 fullName: 'Short User',
                 expiresIn: '10s' 
             })
@@ -94,7 +104,7 @@ class TokenGenerator {
         // Admin token
         tokens.push({
             name: 'Admin Token',
-            ...this.generateConnectionToken('admin1', 'adminuser', { 
+            ...this.generateConnectionToken(1, 'adminuser', { 
                 fullName: 'Admin User',
                 isAdmin: true,
                 expiresIn: '2h' 
@@ -104,13 +114,13 @@ class TokenGenerator {
         // Already expired token (for error testing)
         try {
             const expiredToken = jwt.sign({
-                user_id: 999, // Ensure it's a number
+                user_id: 999,
                 connection_id: this.generateConnectionId(),
                 username: 'expireduser',
                 full_name: 'Expired User',
                 is_admin: false,
                 jti: crypto.randomBytes(16).toString('hex'),
-                created_at: new Date(Date.now() - 3600000).toISOString() // 1 hour ago
+                created_at: new Date(Date.now() - 3600000).toISOString()
             }, this.secretKey, {
                 expiresIn: '-1h', // Already expired
                 issuer: 'servicedesk-server',

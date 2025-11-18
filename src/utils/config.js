@@ -58,6 +58,15 @@ const validateConfig = (config) => {
             console.warn('⚠️ WARNING: Using default JWT secret. Set JWT_SECRET environment variable.');
         }
     }
+
+    // Enforce minimum secret length for security
+    if (config.jwt.secret && config.jwt.secret.length < 32) {
+        if (config.server.nodeEnv === 'production') {
+            errors.push('JWT_SECRET is too short; must be at least 32 characters for security');
+        } else {
+            console.warn('⚠️ WARNING: JWT_SECRET length < 32 characters; consider using a longer random value.');
+        }
+    }
     
     if (config.server.useHttps) {
         if (!config.ssl.certPath || !config.ssl.keyPath) {
