@@ -112,8 +112,8 @@ Connection-specific tokens must include these claims:
 
 ```json
 {
-  "iss": "servicedesk.local",
-  "aud": "socket.io",
+  "iss": "servicedesk-server",
+  "aud": "servicedesk-client",
   "iat": 1234567890,
   "exp": 1234567890,
   "nbf": 1234567890,
