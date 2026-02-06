@@ -48,7 +48,7 @@ if (-not (Test-Path $scriptOutputPath)) {
 }
 
 # Certificate parameters
-$certName = "ServiceDesk Socket.IO Development Certificate"
+$certName = "Application Socket.IO Development Certificate"
 $notAfter = (Get-Date).AddYears($ValidityYears)
 
 Write-Host "`n[INFO] Certificate Configuration:" -ForegroundColor Yellow
@@ -303,7 +303,7 @@ if (Test-Path $envPath) {
 }
 
 # Copy files to WSL2 if WSL2 path exists
-$wslPath = "/srv/servicedesk-socket-io/config/ssl"
+$wslPath = "/srv/app-socket-io/config/ssl"
 Write-Host "`n[WORK] Checking for WSL2 installation..." -ForegroundColor Yellow
 
 try {
@@ -335,7 +335,7 @@ try {
             Write-Host "[OK] Certificates copied to WSL2: $wslPath" -ForegroundColor Green
             
             # Update WSL .env if it exists
-            $wslEnvPath = "/srv/servicedesk-socket-io/config/.env"
+            $wslEnvPath = "/srv/app-socket-io/config/.env"
             $wslCheckEnv = wsl -e test -f $wslEnvPath
             if ($LASTEXITCODE -eq 0) {
                 wsl -e bash -c "sed -i 's|USE_HTTPS=.*|USE_HTTPS=true|' $wslEnvPath"

@@ -1,17 +1,17 @@
-git m/**
+/**
  * CORRECT Socket.IO Client Implementation
  * 
  * This shows the proper way to connect to Socket.IO and handle responses
  * 
  * IMPORTANT: Your JWT token MUST be generated with:
- *   - issuer: 'servicedesk-server'
- *   - audience: 'servicedesk-client'
+ *   - issuer: 'app-server'
+ *   - audience: 'app-client'
  *   - user_id: numeric integer (not string like 'user123')
  * 
  * Use TokenGenerator on server side or ensure your token generator includes:
  *   jwt.sign(payload, secret, {
- *     issuer: 'servicedesk-server',
- *     audience: 'servicedesk-client',
+ *     issuer: 'app-server',
+ *     audience: 'app-client',
  *     expiresIn: '1h'
  *   })
  */

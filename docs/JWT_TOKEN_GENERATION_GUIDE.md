@@ -3,7 +3,7 @@
 ## ❌ The Problem: Audience Invalid Error
 
 ```
-jwt audience invalid. expected: servicedesk-client
+jwt audience invalid. expected: app-client
 ```
 
 This error occurs when your JWT token is **not generated with the correct claims** required by the server.
@@ -19,8 +19,8 @@ Your JWT token **MUST** include these claims:
   // Required claims (enforced by server)
   "user_id": 123,                    // ✅ MUST be a numeric integer (not "user123")
   "connection_id": "abc123...",      // ✅ Unique connection identifier
-  "iss": "servicedesk-server",       // ✅ MUST match server expectation
-  "aud": "servicedesk-client",       // ✅ MUST match server expectation
+  "iss": "app-server",       // ✅ MUST match server expectation
+  "aud": "app-client",       // ✅ MUST match server expectation
   "exp": 1700000000,                 // ✅ Expiration timestamp (required)
   "iat": 1699996400,                 // ✅ Issued at timestamp (required)
   
@@ -98,8 +98,8 @@ const token = jwt.sign(
     },
     secret,
     {
-        issuer: 'servicedesk-server',     // ✅ REQUIRED
-        audience: 'servicedesk-client',   // ✅ REQUIRED
+        issuer: 'app-server',     // ✅ REQUIRED
+        audience: 'app-client',   // ✅ REQUIRED
         expiresIn: '1h',
         algorithm: 'HS256'                 // ✅ REQUIRED
     }
@@ -123,8 +123,8 @@ $payload = [
     'full_name' => 'John Doe',
     'is_admin' => false,
     'jti' => bin2hex(random_bytes(16)),
-    'iss' => 'servicedesk-server',                 // ✅ REQUIRED
-    'aud' => 'servicedesk-client',                 // ✅ REQUIRED
+    'iss' => 'app-server',                 // ✅ REQUIRED
+    'aud' => 'app-client',                 // ✅ REQUIRED
     'exp' => time() + 3600,                        // ✅ 1 hour from now
     'iat' => time()                                // ✅ Issued now
 ];
@@ -150,8 +150,8 @@ payload = {
     'full_name': 'John Doe',
     'is_admin': False,
     'jti': secrets.token_hex(16),
-    'iss': 'servicedesk-server',                     # ✅ REQUIRED
-    'aud': 'servicedesk-client',                     # ✅ REQUIRED
+    'iss': 'app-server',                     # ✅ REQUIRED
+    'aud': 'app-client',                     # ✅ REQUIRED
     'exp': int(time.time()) + 3600,                  # ✅ 1 hour from now
     'iat': int(time.time())                          # ✅ Issued now
 }
@@ -227,7 +227,7 @@ socket.on('authentication_failed', (error) => {
     
     // Check for audience error
     if (error.message.includes('audience invalid')) {
-        console.error('Token was not generated with audience: servicedesk-client');
+        console.error('Token was not generated with audience: app-client');
     }
 });
 ```
@@ -250,8 +250,8 @@ console.log('Header:', decoded.header);
 console.log('Payload:', decoded.payload);
 
 // Check required fields
-console.log('Issuer:', decoded.payload.iss);        // Must be: servicedesk-server
-console.log('Audience:', decoded.payload.aud);      // Must be: servicedesk-client
+console.log('Issuer:', decoded.payload.iss);        // Must be: app-server
+console.log('Audience:', decoded.payload.aud);      // Must be: app-client
 console.log('User ID type:', typeof decoded.payload.user_id);  // Must be: number
 console.log('User ID value:', decoded.payload.user_id);        // Must be: >= 0
 ```
@@ -288,8 +288,8 @@ jwt.sign(payload, secret, { audience: 'myapp', ... })
 
 // CORRECT
 jwt.sign(payload, secret, { 
-    audience: 'servicedesk-client',  // ✅ Must match
-    issuer: 'servicedesk-server',
+    audience: 'app-client',  // ✅ Must match
+    issuer: 'app-server',
     expiresIn: '1h'
 })
 ```
@@ -316,8 +316,8 @@ io('http://localhost:3001', {
 
 Before connecting your client:
 
-- [ ] Token has `iss: "servicedesk-server"`
-- [ ] Token has `aud: "servicedesk-client"`
+- [ ] Token has `iss: "app-server"`
+- [ ] Token has `aud: "app-client"`
 - [ ] Token has `user_id` as **number** (not string)
 - [ ] Token has `connection_id` (non-empty string)
 - [ ] Token has `exp` (expiration) timestamp

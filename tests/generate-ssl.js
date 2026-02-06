@@ -75,7 +75,7 @@ prompt = no
 C = US
 ST = Development
 L = Local
-O = ServiceDesk Development
+O = Application Development
 CN = localhost
 
 [v3_req]
@@ -157,7 +157,7 @@ switch (command) {
     case 'help':
     case '--help':
     case '-h':
-        console.log('SSL Certificate Manager for ServiceDesk Socket.IO Server\n');
+        console.log('SSL Certificate Manager for Socket.IO Notification Server\n');
         console.log('Usage:');
         console.log('  node generate-ssl.js generate  - Generate self-signed certificates');
         console.log('  node generate-ssl.js status    - Show SSL configuration status');

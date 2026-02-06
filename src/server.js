@@ -1,19 +1,8 @@
 /**
  * Socket.IO Server for Connection-Specific Authentication
  * 
- * This server handles connection-specific JWT authenticatio            // Register connection with manager
-            const registrationResult = connectionManager.registerConnection(socket, payload);
-            
-            // Debug connection registration
-            if (socketDebugger) {
-                socketDebugger.logConnectionRegistration(socket, registrationResult);
-            }
-            
-            if (!registrationResult.success) {
-                throw new Error('Failed to register connection');
-            }real-time notifications
- * for the ServiceDesk system. Each browser tab gets a unique room based on their
- * connection-specific token.
+ * This server handles connection-specific JWT authentication for the application.
+ * Each browser tab gets a unique room based on their connection-specific token.
  */
 
 const fs = require('node:fs');

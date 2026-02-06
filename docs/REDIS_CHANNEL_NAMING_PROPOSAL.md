@@ -24,11 +24,11 @@ Based on the existing codebase, we currently have these Redis channels:
 Use a dot-separated hierarchical naming convention that allows for pattern matching and logical grouping:
 
 ```
-servicedesk.{scope}.{entity}.{action}.{filter?}
+app.{scope}.{entity}.{action}.{filter?}
 ```
 
 **Components:**
-- `servicedesk` - Application namespace
+- `app` - Application namespace
 - `scope` - Target scope (user, global, room, department, etc.)
 - `entity` - Business entity (ticket, user, announcement, etc.)
 - `action` - Action type (created, updated, deleted, assigned, etc.)
@@ -38,85 +38,85 @@ servicedesk.{scope}.{entity}.{action}.{filter?}
 
 #### User-Specific Channels
 ```
-servicedesk.user.{user_id}.{entity}.{action}
-servicedesk.user.{user_id}.ticket.created
-servicedesk.user.{user_id}.ticket.assigned
-servicedesk.user.{user_id}.message.received
-servicedesk.user.{user_id}.session.warning
+app.user.{user_id}.{entity}.{action}
+app.user.{user_id}.ticket.created
+app.user.{user_id}.ticket.assigned
+app.user.{user_id}.message.received
+app.user.{user_id}.session.warning
 ```
 
 #### Connection-Specific Channels
 ```
-servicedesk.connection.{connection_id}.{entity}.{action}
-servicedesk.connection.{connection_id}.tab.focus
-servicedesk.connection.{connection_id}.session.refresh
-servicedesk.connection.{connection_id}.ui.update
+app.connection.{connection_id}.{entity}.{action}
+app.connection.{connection_id}.tab.focus
+app.connection.{connection_id}.session.refresh
+app.connection.{connection_id}.ui.update
 ```
 
 #### Global/Broadcast Channels
 ```
-servicedesk.global.{entity}.{action}
-servicedesk.global.system.maintenance
-servicedesk.global.announcement.published
-servicedesk.global.server.shutdown
+app.global.{entity}.{action}
+app.global.system.maintenance
+app.global.announcement.published
+app.global.server.shutdown
 ```
 
 ### 3. Entity-Based Room Channels
 
 #### Ticket-Specific Channels
 ```
-servicedesk.room.ticket.{ticket_id}.{action}
-servicedesk.room.ticket.{ticket_id}.updated
-servicedesk.room.ticket.{ticket_id}.comment.added
-servicedesk.room.ticket.{ticket_id}.status.changed
-servicedesk.room.ticket.{ticket_id}.assigned
+app.room.ticket.{ticket_id}.{action}
+app.room.ticket.{ticket_id}.updated
+app.room.ticket.{ticket_id}.comment.added
+app.room.ticket.{ticket_id}.status.changed
+app.room.ticket.{ticket_id}.assigned
 ```
 
 #### Department-Specific Channels
 ```
-servicedesk.room.department.{dept_id}.{entity}.{action}
-servicedesk.room.department.{dept_id}.ticket.created
-servicedesk.room.department.{dept_id}.user.joined
-servicedesk.room.department.{dept_id}.announcement.published
+app.room.department.{dept_id}.{entity}.{action}
+app.room.department.{dept_id}.ticket.created
+app.room.department.{dept_id}.user.joined
+app.room.department.{dept_id}.announcement.published
 ```
 
 #### Category-Based Channels
 ```
-servicedesk.room.category.{category_id}.{entity}.{action}
-servicedesk.room.category.hardware.ticket.created
-servicedesk.room.category.software.ticket.escalated
+app.room.category.{category_id}.{entity}.{action}
+app.room.category.hardware.ticket.created
+app.room.category.software.ticket.escalated
 ```
 
 ### 4. Permission-Based Channels
 
 #### Role-Specific Channels
 ```
-servicedesk.role.{role_name}.{entity}.{action}
-servicedesk.role.admin.system.alert
-servicedesk.role.agent.ticket.assigned
-servicedesk.role.supervisor.escalation.required
+app.role.{role_name}.{entity}.{action}
+app.role.admin.system.alert
+app.role.agent.ticket.assigned
+app.role.supervisor.escalation.required
 ```
 
 #### Priority-Based Channels
 ```
-servicedesk.priority.{level}.{entity}.{action}
-servicedesk.priority.high.ticket.created
-servicedesk.priority.critical.system.alert
+app.priority.{level}.{entity}.{action}
+app.priority.high.ticket.created
+app.priority.critical.system.alert
 ```
 
 ### 5. Advanced Filtering Channels
 
 #### Multi-Criteria Filters
 ```
-servicedesk.filter.{filter_hash}.{entity}.{action}
-servicedesk.filter.a3b2c1.ticket.created  // Where filter_hash represents specific criteria
+app.filter.{filter_hash}.{entity}.{action}
+app.filter.a3b2c1.ticket.created  // Where filter_hash represents specific criteria
 ```
 
 #### Tag-Based Channels
 ```
-servicedesk.tag.{tag_name}.{entity}.{action}
-servicedesk.tag.urgent.ticket.created
-servicedesk.tag.security.incident.reported
+app.tag.{tag_name}.{entity}.{action}
+app.tag.urgent.ticket.created
+app.tag.security.incident.reported
 ```
 
 ## Implementation Strategy
@@ -140,11 +140,11 @@ servicedesk.tag.security.incident.reported
 
 ```javascript
 // Subscribe to specific patterns
-window.serviceDeskNotifications.subscribe({
+window.appNotifications.subscribe({
   patterns: [
-    'servicedesk.user.{user_id}.ticket.*',
-    'servicedesk.room.ticket.{ticket_id}.*',
-    'servicedesk.global.system.*'
+    'app.user.{user_id}.ticket.*',
+    'app.room.ticket.{ticket_id}.*',
+    'app.global.system.*'
   ],
   filters: {
     priority: ['high', 'critical'],
@@ -154,9 +154,9 @@ window.serviceDeskNotifications.subscribe({
 });
 
 // Dynamic subscription updates
-window.serviceDeskNotifications.updateSubscriptions({
-  add: ['servicedesk.room.ticket.12345.*'],
-  remove: ['servicedesk.room.ticket.12344.*']
+window.appNotifications.updateSubscriptions({
+  add: ['app.room.ticket.12345.*'],
+  remove: ['app.room.ticket.12344.*']
 });
 ```
 
@@ -165,20 +165,20 @@ window.serviceDeskNotifications.updateSubscriptions({
 ```php
 // PHP Backend - Publish to hierarchical channels
 NotificationSender::getInstance()->publishToChannel(
-    'servicedesk.user.123.ticket.assigned',
+    'app.user.123.ticket.assigned',
     $notificationData
 );
 
 NotificationSender::getInstance()->publishToChannel(
-    'servicedesk.room.ticket.456.comment.added',
+    'app.room.ticket.456.comment.added',
     $commentData
 );
 
 // Multi-channel publishing for complex scenarios
 NotificationSender::getInstance()->publishToMultipleChannels([
-    'servicedesk.user.123.ticket.assigned',
-    'servicedesk.room.department.IT.ticket.assigned',
-    'servicedesk.priority.high.ticket.assigned'
+    'app.user.123.ticket.assigned',
+    'app.room.department.IT.ticket.assigned',
+    'app.priority.high.ticket.assigned'
 ], $notificationData);
 ```
 
@@ -189,7 +189,6 @@ NotificationSender::getInstance()->publishToMultipleChannels([
 3. **Performance**: Efficient pattern-based subscriptions reduce unnecessary message processing
 4. **Maintainability**: Clear naming convention makes debugging and monitoring easier
 5. **Backward Compatibility**: Existing channels remain functional during migration
-6. **Future-Proof**: Structure supports future ServiceDesk features and entities
 
 ## Migration Path
 

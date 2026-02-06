@@ -1,7 +1,7 @@
 ﻿{
-  "name": "servicedesk-socketio-server",
+  "name": "socketio-notification-server",
   "version": "1.0.0",
-  "description": "Socket.IO server for ServiceDesk real-time notifications with connection-specific JWT authentication",
+  "description": "Socket.IO server for real-time notifications with connection-specific JWT authentication",
   "main": "src/server.js",
   "scripts": {
     "start": "pm2 start ecosystem.config.js",
@@ -34,9 +34,8 @@
     "jwt",
     "authentication",
     "real-time",
-    "notifications",
-    "servicedesk"
+    "notifications"
   ],
-  "author": "ServiceDesk Team",
+  "author": "Application Team",
   "license": "MIT"
 }

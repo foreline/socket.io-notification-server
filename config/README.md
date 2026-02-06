@@ -1,6 +1,6 @@
 # Configuration Files
 
-This directory contains the environment configuration files for the ServiceDesk Socket.IO Server.
+This directory contains the environment configuration files for the Socket.IO Notification Server.
 
 ## Files
 

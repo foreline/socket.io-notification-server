@@ -44,7 +44,7 @@ This document describes a secure, framework-agnostic approach for implementing r
 /**
  * JWT Helper for Connection-Specific Tokens
  * 
- * File: /local/modules/servicedesk/src/Infrastructure/Authentication/JwtHelper.php
+ * File: src/Infrastructure/Authentication/JwtHelper.php
  */
 
 namespace Infrastructure\Authentication;
@@ -76,7 +76,7 @@ class JwtHelper
         
         // Base claims for the token
         $payload = [
-            'iss' => $_SERVER['HTTP_HOST'] ?? 'servicedesk.local', // Issuer
+            'iss' => $_SERVER['HTTP_HOST'] ?? 'module.local', // Issuer
             'aud' => 'socket.io',                                  // Audience
             'iat' => $now,                                         // Issued at
             'exp' => $now + ($expirationHours * 3600),           // Expiration
@@ -225,7 +225,7 @@ class JwtHelper
 
 // Initialize Bitrix environment
 require_once($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_before.php");
-require_once($_SERVER["DOCUMENT_ROOT"] . "/local/modules/servicedesk/src/Infrastructure/Authentication/JwtHelper.php");
+require_once($_SERVER["DOCUMENT_ROOT"] . "/local/modules/app/src/Infrastructure/Authentication/JwtHelper.php");
 
 use Infrastructure\Authentication\JwtHelper;
 
@@ -357,7 +357,7 @@ try {
 /**
  * Notification Sender for Connection-Specific Tokens
  * 
- * File: /local/modules/servicedesk/src/Infrastructure/Notifications/NotificationSender.php
+ * File: /local/modules/app/src/Infrastructure/Notifications/NotificationSender.php
  */
 
 namespace Infrastructure\Notifications;
@@ -452,7 +452,7 @@ class NotificationSender
     }
     
     /**
-     * Send ServiceDesk-specific notification
+     * Send app-specific notification
      * 
      * @param int $userId User ID
      * @param int $ticketId Ticket ID
@@ -463,14 +463,14 @@ class NotificationSender
     public function sendTicketNotification($userId, $ticketId, $message, $action = 'updated')
     {
         $notification = [
-            'module' => 'servicedesk',
+            'module' => 'app',
             'type' => 'ticket_' . $action,
             'title' => 'Ticket Update',
             'message' => $message,
             'data' => [
                 'ticket_id' => (int)$ticketId,
                 'action' => $action,
-                'url' => "/servicedesk/ticket/{$ticketId}/"
+                'url' => "/app/item/{$ticketId}/"
             ],
             'priority' => 'normal',
             'show_popup' => true,
@@ -540,13 +540,13 @@ function broadcastNotification($notification)
 /**
  * Real-time Notifications Client
  * 
- * File: /local/modules/servicedesk/install/public/js/notifications.js
+ * File: /local/modules/app/install/public/js/notifications.js
  * 
  * This handles connection-specific authentication and real-time notifications
- * for the ServiceDesk module using Socket.IO.
+ * for the App module using Socket.IO.
  */
 
-class ServiceDeskNotifications {
+class AppNotifications {
     constructor(options = {}) {
         // Configuration
         this.config = {
@@ -586,7 +586,7 @@ class ServiceDeskNotifications {
      */
     async init() {
         try {
-            console.log('🔌 Initializing ServiceDesk notifications...');
+            console.log('🔌 Initializing App notifications...');
             
             // Get connection-specific token from backend
             await this.getConnectionToken();
@@ -600,7 +600,7 @@ class ServiceDeskNotifications {
             // Setup visibility change handling (tab switching)
             this.setupVisibilityHandling();
             
-            console.log('✅ ServiceDesk notifications initialized successfully');
+            console.log('✅ App notifications initialized successfully');
             
         } catch (error) {
             console.error('❌ Failed to initialize notifications:', error);
@@ -761,7 +761,7 @@ class ServiceDeskNotifications {
         const notificationEl = this.createNotificationElement(notification);
         
         // Add to notification container
-        let container = document.getElementById('servicedesk-notifications');
+        let container = document.getElementById('app-notifications');
         if (!container) {
             container = this.createNotificationContainer();
         }
@@ -777,10 +777,10 @@ class ServiceDeskNotifications {
         
         // Show browser notification if permission granted
         if (notification.show_popup && Notification.permission === 'granted') {
-            new Notification(notification.title || 'ServiceDesk Notification', {
+            new Notification(notification.title || 'App Notification', {
                 body: notification.message,
-                icon: '/local/modules/servicedesk/install/public/images/notification-icon.png',
-                tag: `servicedesk-${notification.data?.ticket_id || Date.now()}`
+                icon: '/local/modules/app/install/public/images/notification-icon.png',
+                tag: `app-${notification.data?.ticket_id || Date.now()}`
             });
         }
     }
@@ -790,7 +790,7 @@ class ServiceDeskNotifications {
      */
     createNotificationElement(notification) {
         const div = document.createElement('div');
-        div.className = `servicedesk-notification notification-${notification.type} notification-${notification.priority || 'normal'}`;
+        div.className = `app-notification notification-${notification.type} notification-${notification.priority || 'normal'}`;
         div.innerHTML = `
             <div class="notification-header">
                 <span class="notification-title">${notification.title || 'Notification'}</span>
@@ -810,8 +810,8 @@ class ServiceDeskNotifications {
      */
     createNotificationContainer() {
         const container = document.createElement('div');
-        container.id = 'servicedesk-notifications';
-        container.className = 'servicedesk-notifications-container';
+        container.id = 'app-notifications';
+        container.className = 'app-notifications-container';
         document.body.appendChild(container);
         
         // Add CSS styles
@@ -824,14 +824,14 @@ class ServiceDeskNotifications {
      * Inject notification styles
      */
     injectNotificationStyles() {
-        if (document.getElementById('servicedesk-notification-styles')) {
+        if (document.getElementById('app-notification-styles')) {
             return; // Already injected
         }
         
         const style = document.createElement('style');
-        style.id = 'servicedesk-notification-styles';
+        style.id = 'app-notification-styles';
         style.textContent = `
-            .servicedesk-notifications-container {
+            .app-notifications-container {
                 position: fixed;
                 top: 20px;
                 right: 20px;
@@ -839,7 +839,7 @@ class ServiceDeskNotifications {
                 max-width: 400px;
             }
             
-            .servicedesk-notification {
+            .app-notification {
                 background: #fff;
                 border: 1px solid #ddd;
                 border-radius: 8px;
@@ -849,11 +849,11 @@ class ServiceDeskNotifications {
                 animation: slideIn 0.3s ease-out;
             }
             
-            .servicedesk-notification.notification-high {
+            .app-notification.notification-high {
                 border-left: 4px solid #dc3545;
             }
             
-            .servicedesk-notification.notification-normal {
+            .app-notification.notification-normal {
                 border-left: 4px solid #007bff;
             }
             
@@ -1037,7 +1037,7 @@ class ServiceDeskNotifications {
      * Disconnect and cleanup
      */
     disconnect() {
-        console.log('🔌 Disconnecting ServiceDesk notifications...');
+        console.log('🔌 Disconnecting App notifications...');
         
         if (this.socket) {
             this.socket.disconnect();
@@ -1055,12 +1055,12 @@ class ServiceDeskNotifications {
 document.addEventListener('DOMContentLoaded', () => {
     // Only initialize if user is logged in (check for Bitrix user)
     if (window.BX && BX.message('USER_ID')) {
-        window.serviceDeskNotifications = new ServiceDeskNotifications();
+        window.appNotifications = new AppNotifications();
         
         // Request notification permission
-        window.serviceDeskNotifications.requestNotificationPermission();
+        window.appNotifications.requestNotificationPermission();
         
-        console.log('🎯 ServiceDesk notifications available globally as window.serviceDeskNotifications');
+        console.log('🎯 App notifications available globally as window.appNotifications');
     }
 });
 ```
@@ -1078,7 +1078,7 @@ document.addEventListener('DOMContentLoaded', () => {
  * File: server.js
  * 
  * This server handles connection-specific JWT authentication and real-time notifications
- * for the ServiceDesk system. Each browser tab gets a unique room based on their
+ * for the application. Each browser tab gets a unique room based on their
  * connection-specific token.
  */
 
@@ -1607,9 +1607,9 @@ server.listen(config.port, () => {
 
 ```json
 {
-  "name": "servicedesk-socketio-server",
+  "name": "app-socketio-server",
   "version": "1.0.0",
-  "description": "Socket.IO server for ServiceDesk real-time notifications with connection-specific JWT authentication",
+  "description": "Socket.IO server for real-time notifications with connection-specific JWT authentication",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -1631,10 +1631,9 @@ server.listen(config.port, () => {
     "real-time",
     "notifications",
     "jwt",
-    "redis",
-    "servicedesk"
+    "redis"
   ],
-  "author": "ServiceDesk Team",
+  "author": "Application Team",
   "license": "MIT"
 }
 ```
@@ -1668,7 +1667,7 @@ server.listen(config.port, () => {
 
 ```php
 <?php
-// In your ServiceDesk ticket processing code
+// In your processing code
 require_once(__DIR__ . '/path/to/NotificationSender.php');
 
 use Infrastructure\Notifications\NotificationSender;
@@ -1686,22 +1685,22 @@ notifyTicketUpdate($userId, $ticketId, $message, 'assigned');
 
 ```javascript
 // Register notification handler
-window.serviceDeskNotifications.on('notification', (notification) => {
+window.appNotifications.on('notification', (notification) => {
     console.log('Received:', notification);
     
-    if (notification.type === 'ticket_assigned') {
-        // Special handling for ticket assignments
+    if (notification.type === 'item_assigned') {
+        // Special handling for item assignments
         showTicketAssignmentPopup(notification);
     }
 });
 
 // Check connection status
-window.serviceDeskNotifications.on('authenticated', (data) => {
+window.appNotifications.on('authenticated', (data) => {
     console.log('Connected as user:', data.user_id);
     updateConnectionIndicator(true);
 });
 
-window.serviceDeskNotifications.on('disconnected', () => {
+window.appNotifications.on('disconnected', () => {
     updateConnectionIndicator(false);
 });
 ```
@@ -1728,7 +1727,7 @@ export PORT="3000"
 ```bash
 # Using PM2 for production
 npm install -g pm2
-pm2 start server.js --name "servicedesk-notifications"
+pm2 start server.js --name "app-notifications"
 pm2 save
 pm2 startup
 ```

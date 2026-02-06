@@ -1,4 +1,4 @@
-# ServiceDesk Socket.IO Server - Connection-Specific Authentication
+# Socket.IO Server - Connection-Specific Authentication
 
 A secure, scalable Socket.IO server implementation for real-time notifications using connection-specific JWT tokens. Each browser tab gets a unique token that cannot be reused by other connections, providing maximum security for multi-device scenarios.
 
@@ -112,8 +112,8 @@ Connection-specific tokens must include these claims:
 
 ```json
 {
-  "iss": "servicedesk-server",
-  "aud": "servicedesk-client",
+  "iss": "app-server",
+  "aud": "app-client",
   "iat": 1234567890,
   "exp": 1234567890,
   "nbf": 1234567890,

@@ -1,5 +1,5 @@
 /**
- * Configuration Module for ServiceDesk Socket.IO Server
+ * Configuration Module for Socket.IO Notification Server
  * 
  * This module loads and validates environment configuration
  * with proper defaults and type conversion.
