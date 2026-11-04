@@ -2,7 +2,7 @@
  * logger middleware
  */
 
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('node:crypto');
 
 class LoggerMiddleware {
     constructor() {
@@ -21,7 +21,7 @@ class LoggerMiddleware {
         return {
             ...this.logFormat,
             timestamp: new Date().toISOString(),
-            requestId: uuidv4(),
+            requestId: randomUUID(),
             eventType,
             clientId,
             message,
